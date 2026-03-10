@@ -1,0 +1,40 @@
+<div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 relative">
+  
+  <!-- Language Toggle Button -->
+  <div class="absolute top-4 right-4">
+    <button (click)="toggleLanguage()" 
+            class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 uppercase">
+      {{ translationService.currentLang === 'en' ? 'ES' : 'EN' }}
+    </button>
+  </div>
+
+  <div class="max-w-md w-full space-y-8 p-10 bg-white rounded-xl shadow-lg z-10">
+    <div class="text-center">
+      <h2 class="mt-6 text-3xl font-bold text-gray-900">
+        {{ translationService.translate('LOGIN.TITLE') }}
+      </h2>
+      <p class="mt-2 text-sm text-gray-600">
+        {{ translationService.translate('LOGIN.SUBTITLE') }}
+      </p>
+    </div>
+    
+    <form class="mt-8 space-y-6" [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+      <div class="rounded-md shadow-sm space-y-4">
+        <div>
+          <label for="username" class="sr-only">{{ translationService.translate('LOGIN.USERNAME') }}</label>
+          <input id="username" formControlName="username" type="text" required class="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm" [placeholder]="translationService.translate('LOGIN.USERNAME')">
+        </div>
+        <div>
+          <label for="password" class="sr-only">{{ translationService.translate('LOGIN.PASSWORD') }}</label>
+          <input id="password" formControlName="password" type="password" required class="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm" [placeholder]="translationService.translate('LOGIN.PASSWORD')">
+        </div>
+      </div>
+
+      <div>
+        <button type="submit" [disabled]="!loginForm.valid" class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50">
+          {{ translationService.translate('LOGIN.SIGN_IN_BUTTON') }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

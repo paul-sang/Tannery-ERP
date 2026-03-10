@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+.env
+
+# Node
+node_modules/
+dist/
+.angular/
+
+# Docker
+.dockerignore
+
+# IDEs
+.vscode/
+.idea/
+
+# OS
+.DS_Store

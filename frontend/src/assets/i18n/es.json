@@ -1,0 +1,13 @@
+{
+    "LOGIN": {
+        "TITLE": "Bienvenido a ERP Curtiembre",
+        "SUBTITLE": "Por favor inicia sesión en tu cuenta",
+        "USERNAME": "Usuario",
+        "PASSWORD": "Contraseña",
+        "SIGN_IN_BUTTON": "Iniciar sesión"
+    },
+    "LANGUAGES": {
+        "EN": "Inglés",
+        "ES": "Español"
+    }
+}
