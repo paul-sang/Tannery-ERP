@@ -1,0 +1,54 @@
+<div class="space-y-6">
+  <!-- Header Section -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-slate-800 tracking-tight">Suppliers Directory</h1>
+      <p class="text-sm text-slate-500 mt-1">Manage vendor information and contact details.</p>
+    </div>
+    
+    <div class="flex items-center space-x-3">
+      <!-- Search Input -->
+      <div class="relative">
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <svg class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+        <input type="text" [formControl]="searchControl" placeholder="Search suppliers..." 
+               class="pl-9 pr-4 py-2 border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm w-64 transition-shadow">
+      </div>
+
+      <button (click)="openCreateForm()" 
+              class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-sm transition-colors cursor-pointer">
+        <svg class="-ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        New Supplier
+      </button>
+    </div>
+  </div>
+
+  <!-- Data Table Section -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+    <app-data-table 
+      [columns]="tableColumns" 
+      [data]="suppliers()" 
+      [loading]="isLoading()"
+      [totalItems]="totalItems()"
+      [currentPage]="currentPage()"
+      [pageSize]="pageSize()"
+      (pageChange)="onPageChange($event)"
+      (pageSizeChange)="onPageSizeChange($event)"
+      (sort)="onSort($event)"
+      (actionClick)="handleTableAction($event)">
+    </app-data-table>
+  </div>
+</div>
+
+<!-- Form Modal -->
+<app-supplier-form
+  [isOpen]="isFormOpen()"
+  [supplierToEdit]="selectedSupplierForEdit"
+  (closeForm)="closeForm()"
+  (supplierSaved)="onSupplierSaved()">
+</app-supplier-form>

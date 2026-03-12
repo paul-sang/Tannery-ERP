@@ -1,0 +1,82 @@
+<div class="animate-fade-in-up">
+  
+  <div class="flex justify-between items-center mb-6">
+    <div>
+      <h1 class="text-2xl font-semibold text-gray-900">Sales Orders</h1>
+      <p class="mt-1 text-sm text-gray-500">Track and manage outgoing shipments of finished leather to customers.</p>
+    </div>
+    
+    <div class="flex gap-3">
+    <div class="flex gap-3">
+      <div class="relative rounded-md shadow-sm">
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+        <input type="text" [formControl]="searchControl" class="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md h-full py-2 border" placeholder="Search orders...">
+      </div>
+
+      <button (click)="openFilters()" class="flex items-center justify-center px-4 py-2 border border-slate-300 shadow-sm text-sm font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50 transition cursor-pointer">
+        <svg class="mr-2 h-4 w-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+        </svg>
+        Filter
+      </button>
+
+      <button (click)="openForm()" class="flex items-center justify-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 transition cursor-pointer">
+        <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        New Sales Order
+      </button>
+    </div>
+  </div>
+
+  <app-data-table 
+    [columns]="tableColumns" 
+    [data]="orders()" 
+    [loading]="isLoading()"
+    [totalCount]="totalItems()"
+    [currentPage]="currentPage()"
+    [pageSize]="pageSize()"
+    (onPageChange)="onPageChange($event)"
+    (onPageSizeChange)="onPageSizeChange($event)"
+    (onRowClick)="onRowClick($event)"
+    (onSort)="onSort($event)">
+  </app-data-table>
+
+  <!-- Advanced Filters Offcanvas -->
+  <app-offcanvas 
+    [isOpen]="isFilterOpen()" 
+    title="Advanced Filters" 
+    (closeOffcanvas)="closeFilters()">
+    
+    <div class="space-y-6">
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Status</label>
+        <select [formControl]="filterStatusControl" class="mt-1 border block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+          <option value="">All Statuses</option>
+          <option *ngFor="let opt of statusOptions" [value]="opt">{{ opt }}</option>
+        </select>
+      </div>
+      
+      <div class="pt-4 border-t border-gray-200 flex justify-end space-x-3">
+        <button type="button" (click)="clearFilters()" class="cursor-pointer px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+          Clear
+        </button>
+        <button type="button" (click)="applyFilters()" class="cursor-pointer px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+          Apply Filters
+        </button>
+      </div>
+    </div>
+  </app-offcanvas>
+
+  <!-- Sales Order Form Modal -->
+  <app-sales-form 
+    [isOpen]="isFormOpen()"
+    (closeForm)="closeForm()"
+    (orderSaved)="onOrderSaved()">
+  </app-sales-form>
+
+</div>

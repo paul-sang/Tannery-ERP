@@ -1,0 +1,233 @@
+<div class="animate-fade-in-up">
+  
+  <div class="flex justify-between items-center mb-6">
+    <div>
+      <h1 class="text-2xl font-semibold text-gray-900">Items Catalog</h1>
+      <p class="mt-1 text-sm text-gray-500">Manage all raw hides, chemicals, and finished products.</p>
+    </div>
+    
+    <div class="flex gap-3">
+      <div class="relative rounded-md shadow-sm">
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+        <input type="text" [formControl]="searchControl" class="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md h-full py-2 border" placeholder="Search items...">
+      </div>
+
+      <button (click)="openFilters()" class="flex items-center justify-center px-4 py-2 border border-slate-300 shadow-sm text-sm font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50 transition cursor-pointer">
+        <svg class="mr-2 h-4 w-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+        </svg>
+        Filter
+      </button>
+
+      <button (click)="openForm()" class="flex items-center justify-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 transition cursor-pointer">
+        <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        New Item
+      </button>
+    </div>
+  </div>
+
+  <app-data-table 
+    [columns]="tableColumns" 
+    [data]="items()" 
+    [loading]="isLoading()"
+    [totalCount]="totalItems()"
+    [currentPage]="currentPage()"
+    [pageSize]="pageSize()"
+    (pageChange)="onPageChange($event)"
+    (pageSizeChange)="onPageSizeChange($event)"
+    (rowClick)="onRowClick($event)"
+    (sort)="onSort($event)"
+    (actionClick)="handleTableAction($event)">
+  </app-data-table>
+
+  <!-- Advanced Filters Offcanvas -->
+  <app-offcanvas 
+    [isOpen]="isFilterOpen()" 
+    title="Advanced Filters" 
+    (closeOffcanvas)="closeFilters()">
+    
+    <div class="space-y-6">
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Category</label>
+        <select [formControl]="filterCategoryControl" class="mt-1 border block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+          <option value="">All Categories</option>
+          <option *ngFor="let cat of categories()" [value]="cat.id">{{ cat.name }}</option>
+        </select>
+      </div>
+      
+      <div class="pt-4 border-t border-gray-200 flex justify-end space-x-3">
+        <button type="button" (click)="clearFilters()" class="cursor-pointer px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+          Clear
+        </button>
+        <button type="button" (click)="applyFilters()" class="cursor-pointer px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+          Apply Filters
+        </button>
+      </div>
+    </div>
+  </app-offcanvas>
+
+  <!-- Creation Form Modal -->
+  <app-item-form 
+    [isOpen]="isFormOpen()"
+    [itemToEdit]="selectedItem"
+    (closeForm)="closeForm()"
+    (itemSaved)="onItemSaved()">
+  </app-item-form>
+
+  <!-- Stock Details Offcanvas -->
+  <app-offcanvas 
+    [isOpen]="isStockDetailsOpen()" 
+    title="Stock Details" 
+    (closeOffcanvas)="closeStockDetails()">
+    
+    @if (selectedItemForDetails()) {
+      <div class="space-y-6">
+        <!-- Header Info -->
+        <div class="bg-indigo-50 border border-indigo-100 rounded-lg p-5">
+          <div class="flex justify-between items-start">
+            <div>
+              <h3 class="text-xl font-bold text-indigo-900">{{ selectedItemForDetails()?.code }}</h3>
+              <p class="text-sm font-medium text-indigo-700 mt-1">{{ selectedItemForDetails()?.name }}</p>
+            </div>
+            <span [ngClass]="selectedItemForDetails()?.status === 'ACTIVE' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide">
+              {{ selectedItemForDetails()?.status === 'ACTIVE' ? 'Active' : 'Inactive' }}
+            </span>
+          </div>
+          <div class="mt-5 grid grid-cols-2 gap-4 text-sm mix-blend-multiply">
+            <div class="bg-white/60 p-3 rounded shadow-sm">
+              <span class="block text-indigo-800 font-semibold text-xs uppercase tracking-wide mb-1">Total Stock</span> 
+              <span class="font-bold text-indigo-900 text-2xl">{{ stockReportData()?.total_stock || 0 }} <span class="text-sm font-medium text-indigo-700">{{ selectedItemForDetails()?.uom_code }}</span></span>
+            </div>
+            <div class="bg-white/60 p-3 rounded shadow-sm">
+              <span class="block text-indigo-800 font-semibold text-xs uppercase tracking-wide mb-1">Min Alert</span> 
+              <span class="font-bold text-indigo-900 text-2xl">{{ selectedItemForDetails()?.min_stock_level }} <span class="text-sm font-medium text-indigo-700">{{ selectedItemForDetails()?.uom_code }}</span></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabs Navigation -->
+        <div class="border-b border-slate-200">
+          <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+            <button (click)="activeTab.set('lots')" [ngClass]="activeTab() === 'lots' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm cursor-pointer transition flex items-center">
+              Active Lots
+              @if (stockReportData()?.active_lots) {
+                <span [ngClass]="activeTab() === 'lots' ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-900'" class="ml-2 py-0.5 px-2.5 rounded-full text-xs font-medium">
+                  {{ stockReportData()?.active_lots.length }}
+                </span>
+              }
+            </button>
+            <button (click)="activeTab.set('movements')" [ngClass]="activeTab() === 'movements' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm cursor-pointer transition flex items-center">
+              Recent Movements
+              @if (stockReportData()?.recent_movements) {
+                <span [ngClass]="activeTab() === 'movements' ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-900'" class="ml-2 py-0.5 px-2.5 rounded-full text-xs font-medium">
+                  {{ stockReportData()?.recent_movements.length }}
+                </span>
+              }
+            </button>
+          </nav>
+        </div>
+
+        <!-- Content -->
+        @if (!stockReportData()) {
+          <div class="flex justify-center py-12">
+            <svg class="animate-spin h-8 w-8 text-indigo-600" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          </div>
+        } @else {
+          
+          <!-- Tab: Lots -->
+          @if (activeTab() === 'lots') {
+            @if (stockReportData()?.active_lots.length === 0) {
+              <div class="text-center py-12 bg-slate-50 border border-dashed border-slate-300 rounded-lg">
+                <svg class="mx-auto h-12 w-12 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+                <h3 class="mt-2 text-sm font-semibold text-slate-900">No active lots</h3>
+                <p class="mt-1 text-sm text-slate-500">This item does not have any stock in inventory.</p>
+              </div>
+            } @else {
+              <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 rounded-lg">
+                <table class="min-w-full divide-y divide-slate-300">
+                  <thead class="bg-slate-50">
+                    <tr>
+                      <th scope="col" class="py-3 pl-4 pr-3 text-left text-xs font-semibold text-slate-900 uppercase tracking-wide">Tracking Number</th>
+                      <th scope="col" class="px-3 py-3 text-right text-xs font-semibold text-slate-900 uppercase tracking-wide">Primary Qty</th>
+                      <th scope="col" class="px-3 py-3 text-right text-xs font-semibold text-slate-900 uppercase tracking-wide">Secondary Qty</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-200 bg-white">
+                    @for (lot of stockReportData()?.active_lots; track lot.id) {
+                      <tr class="hover:bg-slate-50 transition">
+                        <td class="whitespace-nowrap py-3 pl-4 pr-3 text-sm font-medium text-indigo-600">{{ lot.lot_tracking_number }}</td>
+                        <td class="whitespace-nowrap px-3 py-3 text-sm font-semibold text-slate-900 text-right">{{ lot.current_primary_quantity }}</td>
+                        <td class="whitespace-nowrap px-3 py-3 text-sm text-slate-500 text-right">{{ lot.current_secondary_quantity || '-' }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          }
+
+          <!-- Tab: Movements -->
+          @if (activeTab() === 'movements') {
+            @if (stockReportData()?.recent_movements.length === 0) {
+              <div class="text-center py-12 bg-slate-50 border border-dashed border-slate-300 rounded-lg">
+                <svg class="mx-auto h-12 w-12 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <h3 class="mt-2 text-sm font-semibold text-slate-900">No movement history</h3>
+                <p class="mt-1 text-sm text-slate-500">There are no recorded transactions for this item yet.</p>
+              </div>
+            } @else {
+              <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 rounded-lg">
+                <table class="min-w-full divide-y divide-slate-300">
+                  <thead class="bg-slate-50">
+                    <tr>
+                      <th scope="col" class="py-3 pl-4 pr-3 text-left text-xs font-semibold text-slate-900 uppercase tracking-wide">Date</th>
+                      <th scope="col" class="px-3 py-3 text-left text-xs font-semibold text-slate-900 uppercase tracking-wide">Type</th>
+                      <th scope="col" class="px-3 py-3 text-left text-xs font-semibold text-slate-900 uppercase tracking-wide">Lot</th>
+                      <th scope="col" class="px-3 py-3 text-right text-xs font-semibold text-slate-900 uppercase tracking-wide">Qty</th>
+                      <th scope="col" class="pr-4 pl-3 py-3 text-left text-xs font-semibold text-slate-900 uppercase tracking-wide">Reference</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-200 bg-white">
+                    @for (mov of stockReportData()?.recent_movements; track mov.id) {
+                      <tr class="hover:bg-slate-50 transition">
+                        <td class="whitespace-nowrap py-3 pl-4 pr-3 text-xs font-medium text-slate-600">{{ mov.date | date:'MM/dd/yy HH:mm' }}</td>
+                        <td class="whitespace-nowrap px-3 py-3 text-xs">
+                          <span [ngClass]="{
+                            'text-emerald-700 bg-emerald-100 ring-emerald-600/20': mov.movement_type === 'IN',
+                            'text-rose-700 bg-rose-100 ring-rose-600/20': mov.movement_type === 'OUT',
+                            'text-amber-700 bg-amber-100 ring-amber-600/20': mov.movement_type === 'ADJUSTMENT'
+                          }" class="inline-flex items-center rounded-md px-2 py-1 text-[10px] font-bold uppercase tracking-wider ring-1 ring-inset">
+                            {{ mov.movement_type }}
+                          </span>
+                        </td>
+                        <td class="whitespace-nowrap px-3 py-3 text-xs font-medium text-indigo-600">{{ mov.stock_lot_details?.lot_tracking_number }}</td>
+                        <td class="whitespace-nowrap px-3 py-3 text-xs font-bold text-slate-900 text-right">{{ mov.quantity }}</td>
+                        <td class="whitespace-nowrap pr-4 pl-3 py-3 text-xs text-slate-500 truncate max-w-[100px]" [title]="mov.reference_document">
+                          {{ mov.reference_document || '-' }}
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          }
+
+        }
+      </div>
+    }
+  </app-offcanvas>
+
+</div>

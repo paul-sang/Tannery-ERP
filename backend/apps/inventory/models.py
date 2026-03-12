@@ -22,12 +22,17 @@ class UnitOfMeasure(models.Model):
         return f"{self.name} ({self.abbreviation})"
 
 class Item(models.Model):
+    class Status(models.TextChoices):
+        ACTIVE = 'ACTIVE', 'Active'
+        INACTIVE = 'INACTIVE', 'Inactive'
+
     sku = models.CharField(max_length=50, unique=True)
     name = models.CharField(max_length=100)
     category = models.ForeignKey(ProductCategory, on_delete=models.PROTECT, related_name='items')
     uom = models.ForeignKey(UnitOfMeasure, on_delete=models.PROTECT, related_name='items_primary')
     secondary_uom = models.ForeignKey(UnitOfMeasure, on_delete=models.SET_NULL, null=True, blank=True, related_name='items_secondary')
     min_stock_level = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.ACTIVE)
     attributes = models.JSONField(default=dict, blank=True)
 
     def __str__(self):

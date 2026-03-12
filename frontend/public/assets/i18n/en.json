@@ -1,0 +1,9 @@
+{
+  "LOGIN": {
+    "TITLE": "Welcome Back",
+    "SUBTITLE": "Sign in to your account",
+    "USERNAME": "Username",
+    "PASSWORD": "Password",
+    "SIGN_IN_BUTTON": "Sign In"
+  }
+}

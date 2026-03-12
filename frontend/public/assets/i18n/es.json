@@ -1,0 +1,9 @@
+{
+  "LOGIN": {
+    "TITLE": "Bienvenido de nuevo",
+    "SUBTITLE": "Inicia sesión en tu cuenta",
+    "USERNAME": "Usuario",
+    "PASSWORD": "Contraseña",
+    "SIGN_IN_BUTTON": "Iniciar Sesión"
+  }
+}

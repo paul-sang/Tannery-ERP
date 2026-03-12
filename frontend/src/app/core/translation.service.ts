@@ -1,5 +1,9 @@
 import { Injectable, signal } from '@angular/core';
 
+// Ensure standard behavior of fetching JSON directly if bundler allows
+import enJson from '../../../public/assets/i18n/en.json';
+import esJson from '../../../public/assets/i18n/es.json';
+
 @Injectable({
     providedIn: 'root'
 })
@@ -7,24 +11,9 @@ export class TranslationService {
     private currentLanguage = signal<'en' | 'es'>('en');
 
     private translations: Record<'en' | 'es', any> = {
-        en: {},
-        es: {}
+        en: enJson,
+        es: esJson
     };
-
-    constructor() {
-        this.loadTranslations();
-    }
-
-    private async loadTranslations() {
-        try {
-            const enRes = await fetch('/assets/i18n/en.json');
-            const esRes = await fetch('/assets/i18n/es.json');
-            this.translations.en = await enRes.json();
-            this.translations.es = await esRes.json();
-        } catch (e) {
-            console.error('Failed to load translations', e);
-        }
-    }
 
     get currentLang() {
         return this.currentLanguage();

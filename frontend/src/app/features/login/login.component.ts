@@ -1,8 +1,9 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
-import { environment } from '../../../environments/environment';
+import { Router } from '@angular/router';
+import { AuthService } from '../../core/auth/auth.service';
 import { TranslationService } from '../../core/translation.service';
 
 @Component({
@@ -13,8 +14,12 @@ import { TranslationService } from '../../core/translation.service';
 })
 export class LoginComponent {
     private fb = inject(FormBuilder);
-    private http = inject(HttpClient);
     public translationService = inject(TranslationService);
+    private authService = inject(AuthService);
+    private router = inject(Router);
+
+    isLoading = signal(false);
+    errorMessage = signal<string | null>(null);
 
     loginForm = this.fb.group({
         username: ['', Validators.required],
@@ -23,10 +28,25 @@ export class LoginComponent {
 
     onSubmit() {
         if (this.loginForm.valid) {
-            this.http.post(`${environment.apiUrl}/token/`, this.loginForm.value)
+            this.isLoading.set(true);
+            this.errorMessage.set(null);
+            
+            this.authService.login(this.loginForm.value)
                 .subscribe({
-                    next: (response) => console.log('Login successful', response),
-                    error: (err) => console.error('Login failed', err)
+                    next: () => {
+                        this.isLoading.set(false);
+                        console.log('Login successful');
+                        this.router.navigate(['/dashboard']);
+                    },
+                    error: (err) => {
+                        this.isLoading.set(false);
+                        console.error('Login failed', err);
+                        if (err.status === 401) {
+                             this.errorMessage.set('Invalid username or password');
+                        } else {
+                             this.errorMessage.set('Failed to connect to the server');
+                        }
+                    }
                 });
         }
     }

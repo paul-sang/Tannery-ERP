@@ -1,9 +1,10 @@
 @import "tailwindcss";
+@source "./app";
 
 /* Global Styles */
 html,
 body {
   height: 100%;
   margin: 0;
-  font-family: Roboto, "Helvetica Neue", sans-serif;
+  font-family: "Inter", Roboto, "Helvetica Neue", sans-serif;
 }
