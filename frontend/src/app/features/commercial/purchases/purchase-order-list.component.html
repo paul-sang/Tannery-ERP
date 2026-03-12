@@ -39,10 +39,10 @@
     [totalCount]="totalItems()"
     [currentPage]="currentPage()"
     [pageSize]="pageSize()"
-    (pageChange)="onPageChange($event)"
-    (pageSizeChange)="onPageSizeChange($event)"
-    (rowClick)="onRowClick($event)"
-    (sort)="onSort($event)">
+    (onPageChange)="onPageChange($event)"
+    (onPageSizeChange)="onPageSizeChange($event)"
+    (onRowClick)="onRowClick($event)"
+    (onSort)="onSort($event)">
   </app-data-table>
 
   <!-- Advanced Filters Offcanvas -->

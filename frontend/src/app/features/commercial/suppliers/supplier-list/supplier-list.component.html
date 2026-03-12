@@ -34,13 +34,13 @@
       [columns]="tableColumns" 
       [data]="suppliers()" 
       [loading]="isLoading()"
-      [totalItems]="totalItems()"
+      [totalCount]="totalItems()"
       [currentPage]="currentPage()"
       [pageSize]="pageSize()"
-      (pageChange)="onPageChange($event)"
-      (pageSizeChange)="onPageSizeChange($event)"
-      (sort)="onSort($event)"
-      (actionClick)="handleTableAction($event)">
+      (onPageChange)="onPageChange($event)"
+      (onPageSizeChange)="onPageSizeChange($event)"
+      (onSort)="onSort($event)"
+      (onActionClick)="handleTableAction($event)">
     </app-data-table>
   </div>
 </div>

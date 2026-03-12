@@ -53,7 +53,7 @@ export class ItemListComponent implements OnInit {
     { key: 'code', label: 'Item Code', sortable: true, sortKey: 'sku' },
     { key: 'name', label: 'Description', sortable: true },
     { key: 'category_name', label: 'Category', sortable: true, sortKey: 'category__name' },
-    { key: 'total_stock', label: 'Total Stock', sortable: true },
+    { key: 'current_stock', label: 'Current Stock', sortable: true },
     { key: 'uom_code', label: 'Primary UOM', sortable: true, sortKey: 'uom__name' },
     { key: 'status_badge', label: 'Status', type: 'badge' },
     { key: 'actions', label: 'Actions', type: 'action' }
@@ -89,7 +89,8 @@ export class ItemListComponent implements OnInit {
           code: item.sku,
           category_name: item.category_details?.name || 'Uncategorized',
           uom_code: item.uom_details?.abbreviation || '-',
-          status_badge: item.status === 'ACTIVE' ? 'Active' : 'Inactive'
+          status_badge: item.status === 'ACTIVE' ? 'Active' : 'Inactive',
+          current_stock: item.current_stock
         }));
         
         this.items.set(mappedData as any);
@@ -104,11 +105,12 @@ export class ItemListComponent implements OnInit {
   }
 
   onRowClick(row: any) {
-    console.log('Row clicked in item-list!', row);
     this.selectedItemForDetails.set(row);
     this.stockReportData.set(null); // Clear previous data
     this.isStockDetailsOpen.set(true);
-    this.activeTab.set('lots');
+    
+    // Default to movements if not lot-tracked
+    this.activeTab.set(row.track_by_lot ? 'lots' : 'movements');
     
     // Fetch stock report
     this.inventoryService.getItemStockReport(row.id).subscribe({

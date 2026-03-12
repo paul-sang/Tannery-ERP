@@ -69,7 +69,7 @@ export class PurchaseOrderListComponent implements OnInit {
       next: (response) => {
         const mappedData = response.results.map((order: PurchaseOrder) => ({
           ...order,
-          supplier_name: order.supplier.name,
+          supplier_name: order.supplier_details?.company_name || 'Unknown',
           total_amount_formatted: `$${order.total_amount}`,
           status_badge: order.status
         }));

@@ -25,6 +25,7 @@ export interface PurchaseOrder {
   id?: number;
   order_number: string;
   supplier: number;
+  supplier_details?: any;
   supplier_name?: string;
   order_date?: string;
   status: 'DRAFT' | 'APPROVED' | 'RECEIVED' | 'CANCELLED';

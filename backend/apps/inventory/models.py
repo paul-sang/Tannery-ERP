@@ -34,6 +34,8 @@ class Item(models.Model):
     min_stock_level = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.ACTIVE)
     attributes = models.JSONField(default=dict, blank=True)
+    track_by_lot = models.BooleanField(default=True)
+    current_stock = models.DecimalField(max_digits=14, decimal_places=2, default=0.00)
 
     def __str__(self):
         return f"[{self.sku}] {self.name}"
@@ -57,7 +59,8 @@ class StockMovement(models.Model):
         OUT = 'OUT', 'Out'
         ADJUSTMENT = 'ADJ', 'Adjustment'
 
-    stock_lot = models.ForeignKey(StockLot, on_delete=models.PROTECT, related_name='movements')
+    item = models.ForeignKey(Item, on_delete=models.PROTECT, related_name='movements', null=True, blank=True)
+    stock_lot = models.ForeignKey(StockLot, on_delete=models.PROTECT, related_name='lot_movements', null=True, blank=True)
     movement_type = models.CharField(max_length=3, choices=MovementType.choices)
     quantity = models.DecimalField(max_digits=12, decimal_places=2)
     secondary_quantity = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)

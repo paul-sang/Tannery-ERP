@@ -35,6 +35,7 @@ export class ItemFormComponent implements OnInit, OnChanges {
       secondary_uom: [null],
       min_stock_level: [0, [Validators.required, Validators.min(0)]],
       status: ['ACTIVE', Validators.required],
+      track_by_lot: [true],
       attributes: this.fb.group({})
     });
   }
@@ -79,10 +80,11 @@ export class ItemFormComponent implements OnInit, OnChanges {
         secondary_uom: this.itemToEdit.secondary_uom,
         min_stock_level: this.itemToEdit.min_stock_level,
         status: this.itemToEdit.status,
+        track_by_lot: this.itemToEdit.track_by_lot ?? true,
         attributes: this.itemToEdit.attributes || {}
       });
     } else if (changes['itemToEdit'] && !this.itemToEdit) {
-      this.form.reset({ min_stock_level: 0, status: 'ACTIVE' });
+      this.form.reset({ min_stock_level: 0, status: 'ACTIVE', track_by_lot: true });
     }
   }
 
@@ -140,7 +142,7 @@ export class ItemFormComponent implements OnInit, OnChanges {
         next: (res: any) => {
           this.toastService.success('Success', 'Item created successfully.');
           this.isSubmitting = false;
-          this.form.reset({ min_stock_level: 0, status: 'ACTIVE' });
+          this.form.reset({ min_stock_level: 0, status: 'ACTIVE', track_by_lot: true });
           this.itemSaved.emit(res);
           this.closeForm.emit();
         },

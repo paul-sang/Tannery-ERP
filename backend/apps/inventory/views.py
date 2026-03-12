@@ -42,15 +42,14 @@ class UnitOfMeasureViewSet(viewsets.ModelViewSet):
     serializer_class = UnitOfMeasureSerializer
 
 class ItemViewSet(viewsets.ModelViewSet):
-    queryset = Item.objects.select_related('category', 'uom', 'secondary_uom').annotate(
-        total_stock=Coalesce(Sum('lots__current_primary_quantity'), Value(Decimal('0.00')))
-    ).all()
+    queryset = Item.objects.select_related('category', 'uom', 'secondary_uom').all()
     serializer_class = ItemSerializer
     # Note: Search on JSONField 'attributes' is only fully supported natively
     # via icontains on PostgreSQL. SQLite does not support this cast seamlessly.
     search_fields = ['sku', 'name', 'category__name', 'uom__name']
     filterset_fields = ['category']
-    ordering_fields = ['sku', 'name', 'category__name', 'uom__name']
+    ordering_fields = ['id', 'sku', 'name', 'category__name', 'uom__name', 'current_stock']
+    ordering = ['-id']
 
     @action(detail=True, methods=['get'])
     def stock_report(self, request, pk=None):
@@ -60,12 +59,14 @@ class ItemViewSet(viewsets.ModelViewSet):
         active_lots = StockLot.objects.filter(item=item, current_primary_quantity__gt=0).order_by('lot_tracking_number')
         lots_data = StockLotSerializer(active_lots, many=True).data
         
-        # Get recent movements (last 50)
-        movements = StockMovement.objects.filter(stock_lot__item=item).order_by('-date', '-id')[:50]
+        # Get recent movements (last 50) globally for the item or its lots
+        from django.db.models import Q
+        movements = StockMovement.objects.filter(Q(stock_lot__item=item) | Q(item=item)).order_by('-date', '-id')[:50]
         movements_data = StockMovementSerializer(movements, many=True).data
         
         return Response({
-            'total_stock': item.total_stock if hasattr(item, 'total_stock') and item.total_stock is not None else 0,
+            'current_stock': item.current_stock,
+            'track_by_lot': item.track_by_lot,
             'active_lots': lots_data,
             'recent_movements': movements_data
         })

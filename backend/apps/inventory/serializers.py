@@ -15,14 +15,13 @@ class ItemSerializer(serializers.ModelSerializer):
     category_details = ProductCategorySerializer(source='category', read_only=True)
     uom_details = UnitOfMeasureSerializer(source='uom', read_only=True)
     secondary_uom_details = UnitOfMeasureSerializer(source='secondary_uom', read_only=True)
-    total_stock = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
 
     class Meta:
         model = Item
         fields = [
             'id', 'sku', 'name', 'category', 'category_details', 
             'uom', 'uom_details', 'secondary_uom', 'secondary_uom_details',
-            'min_stock_level', 'status', 'attributes', 'total_stock'
+            'min_stock_level', 'status', 'attributes', 'track_by_lot', 'current_stock'
         ]
 
 class StockLotSerializer(serializers.ModelSerializer):

@@ -39,11 +39,11 @@
     [totalCount]="totalItems()"
     [currentPage]="currentPage()"
     [pageSize]="pageSize()"
-    (pageChange)="onPageChange($event)"
-    (pageSizeChange)="onPageSizeChange($event)"
-    (rowClick)="onRowClick($event)"
-    (sort)="onSort($event)"
-    (actionClick)="handleTableAction($event)">
+    (onPageChange)="onPageChange($event)"
+    (onPageSizeChange)="onPageSizeChange($event)"
+    (onRowClick)="onRowClick($event)"
+    (onSort)="onSort($event)"
+    (onActionClick)="handleTableAction($event)">
   </app-data-table>
 
   <!-- Advanced Filters Offcanvas -->
@@ -102,7 +102,7 @@
           <div class="mt-5 grid grid-cols-2 gap-4 text-sm mix-blend-multiply">
             <div class="bg-white/60 p-3 rounded shadow-sm">
               <span class="block text-indigo-800 font-semibold text-xs uppercase tracking-wide mb-1">Total Stock</span> 
-              <span class="font-bold text-indigo-900 text-2xl">{{ stockReportData()?.total_stock || 0 }} <span class="text-sm font-medium text-indigo-700">{{ selectedItemForDetails()?.uom_code }}</span></span>
+              <span class="font-bold text-indigo-900 text-2xl">{{ stockReportData()?.current_stock || 0 }} <span class="text-sm font-medium text-indigo-700">{{ selectedItemForDetails()?.uom_code }}</span></span>
             </div>
             <div class="bg-white/60 p-3 rounded shadow-sm">
               <span class="block text-indigo-800 font-semibold text-xs uppercase tracking-wide mb-1">Min Alert</span> 
@@ -114,14 +114,16 @@
         <!-- Tabs Navigation -->
         <div class="border-b border-slate-200">
           <nav class="-mb-px flex space-x-8" aria-label="Tabs">
-            <button (click)="activeTab.set('lots')" [ngClass]="activeTab() === 'lots' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm cursor-pointer transition flex items-center">
-              Active Lots
-              @if (stockReportData()?.active_lots) {
-                <span [ngClass]="activeTab() === 'lots' ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-900'" class="ml-2 py-0.5 px-2.5 rounded-full text-xs font-medium">
-                  {{ stockReportData()?.active_lots.length }}
-                </span>
-              }
-            </button>
+            @if (selectedItemForDetails()?.track_by_lot) {
+              <button (click)="activeTab.set('lots')" [ngClass]="activeTab() === 'lots' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm cursor-pointer transition flex items-center">
+                Active Lots
+                @if (stockReportData()?.active_lots) {
+                  <span [ngClass]="activeTab() === 'lots' ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-900'" class="ml-2 py-0.5 px-2.5 rounded-full text-xs font-medium">
+                    {{ stockReportData()?.active_lots.length }}
+                  </span>
+                }
+              </button>
+            }
             <button (click)="activeTab.set('movements')" [ngClass]="activeTab() === 'movements' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm cursor-pointer transition flex items-center">
               Recent Movements
               @if (stockReportData()?.recent_movements) {
@@ -145,7 +147,7 @@
           
           <!-- Tab: Lots -->
           @if (activeTab() === 'lots') {
-            @if (stockReportData()?.active_lots.length === 0) {
+            @if (!stockReportData()?.active_lots?.length) {
               <div class="text-center py-12 bg-slate-50 border border-dashed border-slate-300 rounded-lg">
                 <svg class="mx-auto h-12 w-12 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
@@ -179,7 +181,7 @@
 
           <!-- Tab: Movements -->
           @if (activeTab() === 'movements') {
-            @if (stockReportData()?.recent_movements.length === 0) {
+            @if (!stockReportData()?.recent_movements?.length) {
               <div class="text-center py-12 bg-slate-50 border border-dashed border-slate-300 rounded-lg">
                 <svg class="mx-auto h-12 w-12 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -212,7 +214,9 @@
                             {{ mov.movement_type }}
                           </span>
                         </td>
-                        <td class="whitespace-nowrap px-3 py-3 text-xs font-medium text-indigo-600">{{ mov.stock_lot_details?.lot_tracking_number }}</td>
+                        <td class="whitespace-nowrap px-3 py-3 text-xs font-medium text-indigo-600">
+                          {{ mov.stock_lot_details?.lot_tracking_number || '-' }}
+                        </td>
                         <td class="whitespace-nowrap px-3 py-3 text-xs font-bold text-slate-900 text-right">{{ mov.quantity }}</td>
                         <td class="whitespace-nowrap pr-4 pl-3 py-3 text-xs text-slate-500 truncate max-w-[100px]" [title]="mov.reference_document">
                           {{ mov.reference_document || '-' }}

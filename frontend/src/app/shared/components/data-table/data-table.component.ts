@@ -31,11 +31,11 @@ export class DataTableComponent {
   activeSortDirection: 'asc' | 'desc' = 'asc';
   
   // Custom Events
-  rowClick = output<any>();
-  actionClick = output<{action: string, row: any}>();
-  pageChange = output<number>();
-  pageSizeChange = output<number>();
-  sort = output<{column: string, direction: 'asc' | 'desc'}>();
+  onRowClick = output<any>();
+  onActionClick = output<{action: string, row: any}>();
+  onPageChange = output<number>();
+  onPageSizeChange = output<number>();
+  onSort = output<{column: string, direction: 'asc' | 'desc'}>();
 
   get totalPages(): number {
     return Math.ceil(this.totalCount() / this.pageSize()) || 1;
@@ -52,23 +52,22 @@ export class DataTableComponent {
 
   changePage(newPage: number) {
     if (newPage >= 1 && newPage <= this.totalPages) {
-      this.pageChange.emit(newPage);
+      this.onPageChange.emit(newPage);
     }
   }
 
   changePageSize(event: Event) {
     const select = event.target as HTMLSelectElement;
-    this.pageSizeChange.emit(Number(select.value));
+    this.onPageSizeChange.emit(Number(select.value));
   }
 
   handleRowClick(row: any) {
-    console.log('DataTable emitted row click:', row);
-    this.rowClick.emit(row);
+    this.onRowClick.emit(row);
   }
 
   handleAction(action: string, row: any, event: Event) {
     event.stopPropagation();
-    this.actionClick.emit({ action, row });
+    this.onActionClick.emit({ action, row });
   }
 
   handleSort(column: TableColumn) {
@@ -85,6 +84,6 @@ export class DataTableComponent {
       this.activeSortDirection = 'asc';
     }
 
-    this.sort.emit({ column: this.activeSortColumn, direction: this.activeSortDirection });
+    this.onSort.emit({ column: this.activeSortColumn, direction: this.activeSortDirection });
   }
 }

@@ -55,9 +55,10 @@ class ProductionBatch(models.Model):
 
 class BatchInput(models.Model):
     batch = models.ForeignKey(ProductionBatch, on_delete=models.CASCADE, related_name='inputs')
-    stock_lot = models.ForeignKey(StockLot, on_delete=models.PROTECT)
+    item = models.ForeignKey(Item, on_delete=models.PROTECT, null=True, blank=True)
+    stock_lot = models.ForeignKey(StockLot, on_delete=models.PROTECT, null=True, blank=True)
     quantity_weight = models.DecimalField(max_digits=12, decimal_places=2)
-    hide_count = models.PositiveIntegerField()
+    hide_count = models.PositiveIntegerField(null=True, blank=True)
 
 class BatchOutput(models.Model):
     batch = models.ForeignKey(ProductionBatch, on_delete=models.CASCADE, related_name='outputs')
@@ -67,6 +68,7 @@ class BatchOutput(models.Model):
 
 class BatchChemicalUsage(models.Model):
     batch = models.ForeignKey(ProductionBatch, on_delete=models.CASCADE, related_name='chemical_usage')
-    stock_lot = models.ForeignKey(StockLot, on_delete=models.PROTECT)
+    item = models.ForeignKey(Item, on_delete=models.PROTECT, null=True, blank=True)
+    stock_lot = models.ForeignKey(StockLot, on_delete=models.PROTECT, null=True, blank=True)
     planned_quantity = models.DecimalField(max_digits=12, decimal_places=2)
     actual_quantity = models.DecimalField(max_digits=12, decimal_places=2)

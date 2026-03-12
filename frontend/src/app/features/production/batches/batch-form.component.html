@@ -25,7 +25,7 @@
                 [ngClass]="{'border-red-300 focus:ring-red-500 focus:border-red-500': form.get('process')?.invalid && form.get('process')?.touched}">
           <option [ngValue]="null" disabled selected>Select recipe...</option>
           @for (pr of processes; track pr.id) {
-            <option [ngValue]="pr.id">{{ pr.code }} - {{ pr.name }} ({{ pr.stage?.name }})</option>
+            <option [ngValue]="pr.id">{{ pr.code }} - {{ pr.name }} ({{ pr.stage.name }})</option>
           }
         </select>
       </div>

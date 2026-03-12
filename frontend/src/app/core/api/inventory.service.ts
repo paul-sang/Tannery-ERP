@@ -32,7 +32,11 @@ export interface Item {
   min_stock_level: string;
   status: string;
   attributes: any;
-  total_stock?: string | number;
+  current_stock?: string | number;
+  track_by_lot: boolean;
+  code?: string;
+  uom_code?: string;
+  category_name?: string;
 }
 
 export interface StockLot {
@@ -119,5 +123,10 @@ export class InventoryService {
 
   createStockLot(data: any): Observable<StockLot> {
     return this.http.post<StockLot>(`${this.apiUrl}/lots/`, data);
+  }
+
+  // --- External Stock Movements ---
+  createStockMovement(data: any): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/movements/`, data);
   }
 }

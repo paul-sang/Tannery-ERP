@@ -29,7 +29,7 @@
               [ngClass]="{'border-red-300 focus:ring-red-500 focus:border-red-500': form.get('item')?.invalid && form.get('item')?.touched}">
         <option [ngValue]="null" disabled selected>Select an item to track...</option>
         @for (itm of items; track itm.id) {
-          <option [ngValue]="itm.id">[{{ itm.sku }}] {{ itm.name }} (UOM: {{ itm.uom_details?.abbreviation }})</option>
+          <option [ngValue]="itm.id">{{ itm.sku }} - {{ itm.name }} (UOM: {{ itm.uom_details.abbreviation }})</option>
         }
       </select>
     </div>
