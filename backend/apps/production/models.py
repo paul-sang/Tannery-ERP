@@ -1,6 +1,6 @@
 from django.db import models
 from apps.users.models import User
-from apps.inventory.models import Item, StockLot
+from apps.inventory.models import Item
 
 class ProductionStage(models.Model):
     name = models.CharField(max_length=100)
@@ -53,22 +53,7 @@ class ProductionBatch(models.Model):
     def __str__(self):
         return f"Batch {self.batch_number} - {self.process.name}"
 
-class BatchInput(models.Model):
-    batch = models.ForeignKey(ProductionBatch, on_delete=models.CASCADE, related_name='inputs')
-    item = models.ForeignKey(Item, on_delete=models.PROTECT, null=True, blank=True)
-    stock_lot = models.ForeignKey(StockLot, on_delete=models.PROTECT, null=True, blank=True)
-    quantity_weight = models.DecimalField(max_digits=12, decimal_places=2)
-    hide_count = models.PositiveIntegerField(null=True, blank=True)
-
-class BatchOutput(models.Model):
-    batch = models.ForeignKey(ProductionBatch, on_delete=models.CASCADE, related_name='outputs')
-    item = models.ForeignKey(Item, on_delete=models.PROTECT)
-    quantity = models.DecimalField(max_digits=12, decimal_places=2)
-    hide_count = models.PositiveIntegerField()
-
-class BatchChemicalUsage(models.Model):
-    batch = models.ForeignKey(ProductionBatch, on_delete=models.CASCADE, related_name='chemical_usage')
-    item = models.ForeignKey(Item, on_delete=models.PROTECT, null=True, blank=True)
-    stock_lot = models.ForeignKey(StockLot, on_delete=models.PROTECT, null=True, blank=True)
-    planned_quantity = models.DecimalField(max_digits=12, decimal_places=2)
-    actual_quantity = models.DecimalField(max_digits=12, decimal_places=2)
+# NOTE: BatchInput, BatchOutput, and BatchChemicalUsage have been removed.
+# Their functionality is now handled by InventoryDocument with document_type
+# PRODUCTION_CONSUMPTION and PRODUCTION_OUTPUT, linked via
+# InventoryDocument.production_batch FK for full traceability.

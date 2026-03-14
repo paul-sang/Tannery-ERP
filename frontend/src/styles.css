@@ -1,10 +1,150 @@
 @import "tailwindcss";
 @source "./app";
 
-/* Global Styles */
-html,
-body {
-  height: 100%;
-  margin: 0;
-  font-family: "Inter", Roboto, "Helvetica Neue", sans-serif;
+/* ═══════════════════════════════════════════════════════
+   PIELES DEL SUR — Design System Tokens (Tailwind v4)
+   Palette derived from the brand logo:
+     • Leather brown (shield)
+     • Deep red (ribbon)
+     • Amber/gold (ribbon)
+   ═══════════════════════════════════════════════════════ */
+
+@theme {
+  /* ── Primary: Leather Brown ─────────────────────────── */
+  --color-primary: #6B3A2A;
+  --color-primary-foreground: #FFFFFF;
+
+  /* ── Accent: Deep Red ───────────────────────────────── */
+  --color-accent: #C0392B;
+  --color-accent-foreground: #FFFFFF;
+
+  /* ── Warning: Amber / Gold ──────────────────────────── */
+  --color-warning: #E8A317;
+  --color-warning-foreground: #1C1210;
+
+  /* ── Sidebar ────────────────────────────────────────── */
+  --color-sidebar: #2C1810;
+  --color-sidebar-foreground: #D4B896;
+  --color-sidebar-active: #3D261A;
+  --color-sidebar-hover: #3D261A;
+  --color-sidebar-muted: #8C7A6B;
+  --color-sidebar-border: #4A3228;
+
+  /* ── Surfaces ───────────────────────────────────────── */
+  --color-background: #FAF7F5;
+  --color-surface: #FFFFFF;
+  --color-surface-alt: #F5F0EB;
+
+  /* ── Text ───────────────────────────────────────────── */
+  --color-text: #2C1810;
+  --color-text-muted: #8C7A6B;
+
+  /* ── Borders ────────────────────────────────────────── */
+  --color-border: #E8DDD4;
+  --color-ring: #6B3A2A;
+
+  /* ── Status Colors ──────────────────────────────────── */
+  --color-success: #16A34A;
+  --color-success-light: #DCFCE7;
+  --color-success-foreground: #166534;
+  --color-danger: #DC2626;
+  --color-danger-light: #FEE2E2;
+  --color-danger-foreground: #991B1B;
+  --color-info: #2563EB;
+  --color-info-light: #DBEAFE;
+  --color-info-foreground: #1E40AF;
+
+  /* ── Animations ─────────────────────────────────────── */
+  --animate-fade-in-up: fade-in-up 0.4s ease-out;
+  --animate-fade-in: fade-in 0.2s ease-out;
+  --animate-slide-in-right: slide-in-right 0.3s ease-out;
+  --animate-slide-out-right: slide-out-right 0.3s ease-in;
+
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(0.75rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes slide-in-right {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
+  }
+
+  @keyframes slide-out-right {
+    from { transform: translateX(0); }
+    to { transform: translateX(100%); }
+  }
+}
+
+/* ── Dark Mode Variant ────────────────────────────────── */
+@custom-variant dark (&:where(.dark, .dark *));
+
+.dark {
+  --color-primary: #C4956A;
+  --color-primary-foreground: #1C1210;
+
+  --color-accent: #E74C3C;
+  --color-accent-foreground: #FFFFFF;
+
+  --color-warning: #F1C40F;
+  --color-warning-foreground: #1C1210;
+
+  --color-sidebar: #1A0F0A;
+  --color-sidebar-foreground: #C4956A;
+  --color-sidebar-active: #2C1810;
+  --color-sidebar-hover: #2C1810;
+  --color-sidebar-muted: #A08B7A;
+  --color-sidebar-border: #3D261A;
+
+  --color-background: #1C1210;
+  --color-surface: #261A14;
+  --color-surface-alt: #2C1810;
+
+  --color-text: #F5F0EB;
+  --color-text-muted: #A08B7A;
+
+  --color-border: #3D261A;
+  --color-ring: #C4956A;
+
+  --color-success: #22C55E;
+  --color-success-light: #052E16;
+  --color-success-foreground: #86EFAC;
+  --color-danger: #EF4444;
+  --color-danger-light: #450A0A;
+  --color-danger-foreground: #FCA5A5;
+  --color-info: #3B82F6;
+  --color-info-light: #172554;
+  --color-info-foreground: #93C5FD;
+}
+
+/* ── Base Styles ──────────────────────────────────────── */
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html,
+  body {
+    height: 100%;
+    margin: 0;
+    font-family: "Inter", Roboto, "Helvetica Neue", sans-serif;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-text);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
 }

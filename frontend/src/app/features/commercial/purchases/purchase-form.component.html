@@ -8,21 +8,21 @@
     <!-- PO Number & Supplier -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
       <div>
-        <label for="order_number" class="block text-sm font-medium text-slate-700 mb-1">PO Number *</label>
+        <label for="order_number" class="block text-sm font-medium text-text mb-1">PO Number *</label>
         <input type="text" id="order_number" formControlName="order_number" 
-               class="w-full px-3 py-2 border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+               class="w-full px-3 py-2 border border-border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm"
                placeholder="e.g. PO-2026-105"
-               [ngClass]="{'border-red-300 focus:ring-red-500 focus:border-red-500': form.get('order_number')?.invalid && form.get('order_number')?.touched}">
+               [ngClass]="{'border-danger focus:ring-danger focus:border-primary': form.get('order_number')?.invalid && form.get('order_number')?.touched}">
         @if (form.get('order_number')?.invalid && form.get('order_number')?.touched) {
-          <p class="mt-1 text-xs text-red-500">PO Number is required.</p>
+          <p class="mt-1 text-xs text-danger">PO Number is required.</p>
         }
       </div>
 
       <div>
-        <label for="supplier" class="block text-sm font-medium text-slate-700 mb-1">Supplier *</label>
+        <label for="supplier" class="block text-sm font-medium text-text mb-1">Supplier *</label>
         <select id="supplier" formControlName="supplier" 
-                class="w-full px-3 py-2 border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm bg-white"
-                [ngClass]="{'border-red-300 focus:ring-red-500 focus:border-red-500': form.get('supplier')?.invalid && form.get('supplier')?.touched}">
+                class="w-full px-3 py-2 border border-border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm bg-surface"
+                [ngClass]="{'border-danger focus:ring-danger focus:border-primary': form.get('supplier')?.invalid && form.get('supplier')?.touched}">
           <option [ngValue]="null" disabled selected>Select Supplier...</option>
           @for (sup of suppliers; track sup.id) {
             <option [ngValue]="sup.id">[{{ sup.tax_id }}] {{ sup.name }}</option>
@@ -35,15 +35,15 @@
     <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
       
       <div>
-        <label for="order_date" class="block text-sm font-medium text-slate-700 mb-1">Order Date *</label>
+        <label for="order_date" class="block text-sm font-medium text-text mb-1">Order Date *</label>
         <input type="date" id="order_date" formControlName="order_date" 
-               class="w-full px-3 py-2 border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm bg-white text-slate-600">
+               class="w-full px-3 py-2 border border-border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm bg-surface text-text-muted">
       </div>
 
       <div>
-        <label for="status" class="block text-sm font-medium text-slate-700 mb-1">Status *</label>
+        <label for="status" class="block text-sm font-medium text-text mb-1">Status *</label>
         <select id="status" formControlName="status" 
-                class="w-full px-3 py-2 border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm bg-white">
+                class="w-full px-3 py-2 border border-border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm bg-surface">
           <option value="DRAFT">Draft</option>
           <option value="APPROVED">Approved</option>
           <option value="RECEIVED">Received</option>
@@ -53,11 +53,11 @@
     </div>
 
     <!-- Order Details Array -->
-    <div class="mt-8 border-t border-slate-200 pt-6">
+    <div class="mt-8 border-t border-border pt-6">
       <div class="flex items-center justify-between mb-4">
-        <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wide">Order Lines</h3>
+        <h3 class="text-sm font-bold text-text uppercase tracking-wide">Order Lines</h3>
         <button type="button" (click)="addDetail()"
-                class="inline-flex items-center px-3 py-1.5 border border-indigo-600 text-indigo-600 hover:bg-indigo-50 focus:ring-2 focus:ring-indigo-500 rounded-md text-xs font-medium cursor-pointer transition">
+                class="inline-flex items-center px-3 py-1.5 border border-primary text-primary hover:bg-primary/10 focus:ring-2 focus:ring-primary rounded-md text-xs font-medium cursor-pointer transition">
           <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
           Add Item
         </button>
@@ -65,14 +65,14 @@
 
       <div formArrayName="details" class="space-y-3">
         @for (detail of details.controls; track $index) {
-          <div [formGroupName]="$index" class="flex items-start gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200 shadow-sm relative group">
+          <div [formGroupName]="$index" class="flex items-start gap-3 bg-surface-alt p-3 rounded-lg border border-border shadow-sm relative group">
             
             <div class="flex-grow grid grid-cols-12 gap-3 items-end">
               <!-- Item -->
               <div class="col-span-12 md:col-span-6">
-                <label class="block text-xs font-semibold text-slate-600 mb-1">Item</label>
+                <label class="block text-xs font-semibold text-text-muted mb-1">Item</label>
                 <select formControlName="item" 
-                        class="w-full px-2 py-1.5 border border-slate-300 rounded focus:ring-indigo-500 focus:border-indigo-500 text-sm bg-white">
+                        class="w-full px-2 py-1.5 border border-border rounded focus:ring-primary focus:border-primary text-sm bg-surface">
                   <option [ngValue]="null" disabled selected>Select an item...</option>
                   @for (prod of items; track prod.id) {
                     <option [ngValue]="prod.id">[{{ prod.sku }}] {{ prod.name }} ({{ prod.uom_details.abbreviation }})</option>
@@ -82,20 +82,20 @@
               
               <!-- Quantity -->
               <div class="col-span-6 md:col-span-3">
-                <label class="block text-xs font-semibold text-slate-600 mb-1">Quantity</label>
+                <label class="block text-xs font-semibold text-text-muted mb-1">Quantity</label>
                 <input type="number" step="0.01" formControlName="quantity" placeholder="0.00"
-                       class="w-full px-2 py-1.5 border border-slate-300 rounded focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                       class="w-full px-2 py-1.5 border border-border rounded focus:ring-primary focus:border-primary text-sm">
               </div>
 
               <!-- Price -->
               <div class="col-span-6 md:col-span-3">
-                <label class="block text-xs font-semibold text-slate-600 mb-1">Unit Price</label>
+                <label class="block text-xs font-semibold text-text-muted mb-1">Unit Price</label>
                 <div class="relative">
                   <div class="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
-                    <span class="text-slate-500 sm:text-sm">$</span>
+                    <span class="text-text-muted sm:text-sm">$</span>
                   </div>
                   <input type="number" step="0.01" formControlName="unit_price" placeholder="0.00"
-                         class="w-full pl-6 px-2 py-1.5 border border-slate-300 rounded focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                         class="w-full pl-6 px-2 py-1.5 border border-border rounded focus:ring-primary focus:border-primary text-sm">
                 </div>
               </div>
             </div>
@@ -103,7 +103,7 @@
             <!-- Remove Button -->
             <button type="button" (click)="removeDetail($index)" [disabled]="details.controls.length === 1"
                     title="Remove Line"
-                    class="mt-6 flex-shrink-0 text-slate-400 hover:text-red-500 focus:outline-none transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                    class="mt-6 flex-shrink-0 text-text-muted hover:text-danger focus:outline-none transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
               <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
               </svg>
@@ -114,21 +114,21 @@
 
       <!-- Subtotal Calculator -->
       <div class="mt-4 flex justify-end">
-        <div class="bg-indigo-50 px-4 py-2 rounded-lg border border-indigo-100 flex items-center space-x-3">
-          <span class="text-sm font-semibold text-indigo-900">Total Amount:</span>
-          <span class="text-xl font-bold text-indigo-700">${{ totalAmount | number:'1.2-2' }}</span>
+        <div class="bg-primary/10 px-4 py-2 rounded-lg border border-primary/15 flex items-center space-x-3">
+          <span class="text-sm font-semibold text-primary">Total Amount:</span>
+          <span class="text-xl font-bold text-primary">${{ totalAmount | number:'1.2-2' }}</span>
         </div>
       </div>
     </div>
 
     <!-- Footer Action Area -->
-    <div modal-footer class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end space-x-3 rounded-b-xl leading-none">
+    <div modal-footer class="px-6 py-4 bg-surface-alt border-t border-border flex items-center justify-end space-x-3 rounded-b-xl leading-none">
       <button type="button" (click)="closeForm.emit()"
-              class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer transition">
+              class="px-4 py-2 text-sm font-medium text-text bg-surface border border-border rounded-lg hover:bg-surface-alt focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer transition">
         Cancel
       </button>
       <button type="submit" [disabled]="isSubmitting"
-              class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition">
+              class="px-4 py-2 text-sm font-medium text-white bg-primary border border-transparent rounded-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition">
         @if (isSubmitting) {
           <span class="flex items-center">
             <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">

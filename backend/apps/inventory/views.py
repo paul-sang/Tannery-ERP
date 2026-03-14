@@ -4,10 +4,14 @@ from decimal import Decimal
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from .models import ProductCategory, UnitOfMeasure, Item, StockLot, StockMovement
+from .models import (
+    ProductCategory, UnitOfMeasure, Item, StockLot, StockMovement,
+    InventoryDocument, InventoryDocumentLine
+)
 from .serializers import (
     ProductCategorySerializer, UnitOfMeasureSerializer, ItemSerializer,
-    StockLotSerializer, StockMovementSerializer
+    StockLotSerializer, StockMovementSerializer,
+    InventoryDocumentWriteSerializer, InventoryDocumentReadSerializer
 )
 
 class ProductCategoryViewSet(viewsets.ModelViewSet):
@@ -18,7 +22,6 @@ class ProductCategoryViewSet(viewsets.ModelViewSet):
     def next_sku(self, request, pk=None):
         category = self.get_object()
         
-        # Map category names to a 3-letter prefix
         prefix_map = {
             'RAW_HIDE': 'RWH',
             'CHEMICAL': 'CHM',
@@ -27,10 +30,6 @@ class ProductCategoryViewSet(viewsets.ModelViewSet):
         }
         
         prefix = prefix_map.get(category.name, 'ITM')
-        
-        # Count existing items in this category to generate the sequence
-        # Note: A real high-concurrency ERP would use a dedicated DB sequence, 
-        # but counting works fine for this implementation stage.
         count = Item.objects.filter(category=category).count()
         next_seq = count + 1
         
@@ -44,10 +43,8 @@ class UnitOfMeasureViewSet(viewsets.ModelViewSet):
 class ItemViewSet(viewsets.ModelViewSet):
     queryset = Item.objects.select_related('category', 'uom', 'secondary_uom').all()
     serializer_class = ItemSerializer
-    # Note: Search on JSONField 'attributes' is only fully supported natively
-    # via icontains on PostgreSQL. SQLite does not support this cast seamlessly.
     search_fields = ['sku', 'name', 'category__name', 'uom__name']
-    filterset_fields = ['category']
+    filterset_fields = ['category', 'track_by_lot']
     ordering_fields = ['id', 'sku', 'name', 'category__name', 'uom__name', 'current_stock']
     ordering = ['-id']
 
@@ -61,7 +58,11 @@ class ItemViewSet(viewsets.ModelViewSet):
         
         # Get recent movements (last 50) globally for the item or its lots
         from django.db.models import Q
-        movements = StockMovement.objects.filter(Q(stock_lot__item=item) | Q(item=item)).order_by('-date', '-id')[:50]
+        movements = StockMovement.objects.select_related(
+            'stock_lot', 'item', 'user', 'document_line__document'
+        ).filter(
+            Q(stock_lot__item=item) | Q(item=item)
+        ).order_by('-date', '-id')[:50]
         movements_data = StockMovementSerializer(movements, many=True).data
         
         return Response({
@@ -79,7 +80,24 @@ class StockLotViewSet(viewsets.ModelViewSet):
     ordering_fields = ['lot_tracking_number', 'current_primary_quantity']
 
 class StockMovementViewSet(viewsets.ModelViewSet):
-    queryset = StockMovement.objects.select_related('stock_lot', 'user').all()
+    queryset = StockMovement.objects.select_related(
+        'stock_lot', 'item', 'user', 'document_line__document'
+    ).all()
     serializer_class = StockMovementSerializer
-    filterset_fields = ['movement_type', 'stock_lot']
-    ordering_fields = ['created_at', 'primary_quantity']
+    filterset_fields = ['movement_type', 'stock_lot', 'item']
+    ordering_fields = ['date', 'quantity']
+    ordering = ['-date']
+
+class InventoryDocumentViewSet(viewsets.ModelViewSet):
+    queryset = InventoryDocument.objects.select_related('user').prefetch_related(
+        'lines__item', 'lines__stock_lot'
+    ).all()
+    search_fields = ['document_number', 'notes']
+    filterset_fields = ['document_type']
+    ordering_fields = ['date', 'document_number']
+    ordering = ['-date']
+
+    def get_serializer_class(self):
+        if self.action in ['create', 'update', 'partial_update']:
+            return InventoryDocumentWriteSerializer
+        return InventoryDocumentReadSerializer

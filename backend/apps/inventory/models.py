@@ -40,18 +40,81 @@ class Item(models.Model):
     def __str__(self):
         return f"[{self.sku}] {self.name}"
 
+
+# --- Inventory Document (Universal Movement Document) ---
+
+class InventoryDocument(models.Model):
+    class DocumentType(models.TextChoices):
+        ADJUSTMENT = 'ADJ', 'Adjustment'
+        PURCHASE_RECEIPT = 'PUR', 'Purchase Receipt'
+        SALES_DISPATCH = 'SAL', 'Sales Dispatch'
+        PRODUCTION_CONSUMPTION = 'PCN', 'Production Consumption'
+        PRODUCTION_OUTPUT = 'POT', 'Production Output'
+        TRANSFER = 'TRF', 'Transfer'
+        INITIAL_BALANCE = 'INI', 'Initial Balance'
+
+    document_number = models.CharField(max_length=100, unique=True)
+    document_type = models.CharField(max_length=3, choices=DocumentType.choices)
+    date = models.DateTimeField(auto_now_add=True)
+    notes = models.TextField(blank=True)
+    user = models.ForeignKey(User, on_delete=models.PROTECT, related_name='inventory_documents')
+
+    # Optional traceability references
+    purchase_order = models.ForeignKey(
+        'purchases.PurchaseOrder', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='inventory_documents'
+    )
+    sales_order = models.ForeignKey(
+        'sales.SalesOrder', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='inventory_documents'
+    )
+    production_batch = models.ForeignKey(
+        'production.ProductionBatch', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='inventory_documents'
+    )
+
+    def __str__(self):
+        return f"{self.get_document_type_display()} - {self.document_number}"
+
+    class Meta:
+        ordering = ['-date']
+
+
+class InventoryDocumentLine(models.Model):
+    class MovementType(models.TextChoices):
+        IN = 'IN', 'In'
+        OUT = 'OUT', 'Out'
+
+    document = models.ForeignKey(InventoryDocument, on_delete=models.CASCADE, related_name='lines')
+    item = models.ForeignKey(Item, on_delete=models.PROTECT, related_name='document_lines')
+    stock_lot = models.ForeignKey('StockLot', on_delete=models.PROTECT, null=True, blank=True, related_name='document_lines')
+    movement_type = models.CharField(max_length=3, choices=MovementType.choices)
+    quantity = models.DecimalField(max_digits=12, decimal_places=2)
+    secondary_quantity = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    notes = models.TextField(blank=True)
+
+    def __str__(self):
+        lot_info = f" (Lot: {self.stock_lot.lot_tracking_number})" if self.stock_lot else ""
+        return f"{self.movement_type} {self.quantity} x {self.item.name}{lot_info}"
+
+
+# --- Stock Lot ---
+
 class StockLot(models.Model):
     item = models.ForeignKey(Item, on_delete=models.PROTECT, related_name='lots')
     lot_tracking_number = models.CharField(max_length=100, unique=True)
-    
-    source_batch = models.ForeignKey('production.ProductionBatch', on_delete=models.SET_NULL, null=True, blank=True, related_name='generated_lots')
-    source_purchase_detail = models.ForeignKey('purchases.PurchaseOrderDetail', on_delete=models.SET_NULL, null=True, blank=True, related_name='generated_lots')
-    
+    source_document_line = models.ForeignKey(
+        InventoryDocumentLine, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='generated_lots'
+    )
     current_primary_quantity = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     current_secondary_quantity = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
 
     def __str__(self):
         return f"Lot {self.lot_tracking_number} - {self.item.name}"
+
+
+# --- Stock Movement (Ledger Entry) ---
 
 class StockMovement(models.Model):
     class MovementType(models.TextChoices):
@@ -61,12 +124,17 @@ class StockMovement(models.Model):
 
     item = models.ForeignKey(Item, on_delete=models.PROTECT, related_name='movements', null=True, blank=True)
     stock_lot = models.ForeignKey(StockLot, on_delete=models.PROTECT, related_name='lot_movements', null=True, blank=True)
+    document_line = models.ForeignKey(
+        InventoryDocumentLine, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='stock_movements'
+    )
     movement_type = models.CharField(max_length=3, choices=MovementType.choices)
     quantity = models.DecimalField(max_digits=12, decimal_places=2)
     secondary_quantity = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     date = models.DateTimeField(auto_now_add=True)
-    reference_document = models.CharField(max_length=100)
+    reference_document = models.CharField(max_length=100, blank=True)
     user = models.ForeignKey(User, on_delete=models.PROTECT, related_name='stock_movements')
 
     def __str__(self):
-        return f"{self.movement_type} {self.quantity} of {self.stock_lot.lot_tracking_number}"
+        target = self.stock_lot.lot_tracking_number if self.stock_lot else (self.item.name if self.item else 'Unknown')
+        return f"{self.movement_type} {self.quantity} of {target}"

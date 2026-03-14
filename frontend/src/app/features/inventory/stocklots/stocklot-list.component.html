@@ -2,61 +2,110 @@
   
   <div class="flex justify-between items-center mb-6">
     <div>
-      <h1 class="text-2xl font-semibold text-gray-900">Stock Lots Balance</h1>
-      <p class="mt-1 text-sm text-gray-500">Real-time physical balances for hides and chemicals with full traceability.</p>
+      <h1 class="text-2xl font-semibold text-text">Stock Tracker</h1>
+      <p class="mt-1 text-sm text-text-muted">Real-time balances for lot-tracked and general stock items with full traceability.</p>
     </div>
     
     <div class="flex gap-3">
-      <div class="relative rounded-md shadow-sm">
-        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-        </div>
-        <input type="text" [formControl]="searchControl" class="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md h-full py-2 border" placeholder="Search lots or items...">
-      </div>
-
-      <button class="flex items-center justify-center px-4 py-2 border border-slate-300 shadow-sm text-sm font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50 transition cursor-pointer">
-        <svg class="mr-2 h-4 w-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-        Export PDF
-      </button>
-
-      <button class="flex items-center justify-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 transition cursor-pointer">
+      <button (click)="openForm()" class="flex items-center justify-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-success hover:bg-success/90 transition cursor-pointer">
         <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-        </svg>
-        Stock Transfer
-      </button>
-
-      <button (click)="openForm()" class="flex items-center justify-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 transition cursor-pointer">
-        <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
         </svg>
         New Adjustment
       </button>
     </div>
   </div>
 
-  <app-data-table 
-    [columns]="tableColumns" 
-    [data]="lots()" 
-    [loading]="isLoading()"
-    [totalCount]="totalItems()"
-    [currentPage]="currentPage()"
-    [pageSize]="pageSize()"
-    (onPageChange)="onPageChange($event)"
-    (onPageSizeChange)="onPageSizeChange($event)"
-    (onRowClick)="onRowClick($event)"
-    (onSort)="onSort($event)">
-  </app-data-table>
+  <!-- Tab Navigation -->
+  <div class="border-b border-border mb-6">
+    <nav class="-mb-px flex space-x-6" aria-label="Tabs">
+      <button 
+        (click)="switchTab('lots')" 
+        [ngClass]="activeTab() === 'lots' ? 'border-primary text-primary' : 'border-transparent text-text-muted hover:text-text hover:border-border'" 
+        class="whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm cursor-pointer transition flex items-center gap-2">
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+        </svg>
+        Lot Tracked
+        <span [ngClass]="activeTab() === 'lots' ? 'bg-primary/15 text-primary' : 'bg-surface-alt text-text'" class="py-0.5 px-2.5 rounded-full text-xs font-medium">
+          {{ totalLots() }}
+        </span>
+      </button>
 
-  <!-- Manual Adjustment Form Modal -->
-  <app-stocklot-form 
+      <button 
+        (click)="switchTab('general')" 
+        [ngClass]="activeTab() === 'general' ? 'border-primary text-primary' : 'border-transparent text-text-muted hover:text-text hover:border-border'" 
+        class="whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm cursor-pointer transition flex items-center gap-2">
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+        </svg>
+        General Stock
+        <span [ngClass]="activeTab() === 'general' ? 'bg-primary/15 text-primary' : 'bg-surface-alt text-text'" class="py-0.5 px-2.5 rounded-full text-xs font-medium">
+          {{ totalGeneralItems() }}
+        </span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- Lot Tracked Tab -->
+  @if (activeTab() === 'lots') {
+    <div class="mb-4">
+      <div class="relative rounded-md shadow-sm max-w-md">
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <svg class="h-4 w-4 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+        <input type="text" [formControl]="lotsSearch" class="focus:ring-primary focus:border-primary block w-full pl-10 sm:text-sm border-border rounded-md h-full py-2 border" placeholder="Search lots or items...">
+      </div>
+    </div>
+
+    <app-data-table 
+      [columns]="lotColumns" 
+      [data]="lots()" 
+      [loading]="isLotsLoading()"
+      [totalCount]="totalLots()"
+      [currentPage]="lotsPage()"
+      [pageSize]="lotsPageSize()"
+      (onPageChange)="onLotsPageChange($event)"
+      (onPageSizeChange)="onLotsPageSizeChange($event)"
+      (onRowClick)="onLotRowClick($event)"
+      (onSort)="onLotsSort($event)">
+    </app-data-table>
+  }
+
+  <!-- General Stock Tab -->
+  @if (activeTab() === 'general') {
+    <div class="mb-4">
+      <div class="relative rounded-md shadow-sm max-w-md">
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <svg class="h-4 w-4 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+        <input type="text" [formControl]="generalSearch" class="focus:ring-primary focus:border-primary block w-full pl-10 sm:text-sm border-border rounded-md h-full py-2 border" placeholder="Search items...">
+      </div>
+    </div>
+
+    <app-data-table 
+      [columns]="generalColumns" 
+      [data]="generalItems()" 
+      [loading]="isGeneralLoading()"
+      [totalCount]="totalGeneralItems()"
+      [currentPage]="generalPage()"
+      [pageSize]="generalPageSize()"
+      (onPageChange)="onGeneralPageChange($event)"
+      (onPageSizeChange)="onGeneralPageSizeChange($event)"
+      (onRowClick)="onGeneralRowClick($event)"
+      (onSort)="onGeneralSort($event)">
+    </app-data-table>
+  }
+
+  <!-- Multi-Line Adjustment Document Form -->
+  <app-adjustment-form
     [isOpen]="isFormOpen()"
     (closeForm)="closeForm()"
-    (lotSaved)="onLotSaved()">
-  </app-stocklot-form>
+    (documentSaved)="onDocumentSaved()">
+  </app-adjustment-form>
 
 </div>

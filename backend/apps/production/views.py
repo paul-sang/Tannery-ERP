@@ -20,12 +20,8 @@ class ProductionProcessViewSet(viewsets.ModelViewSet):
     ordering_fields = ['name', 'code', 'approximate_duration_hours']
 
 class ProductionBatchViewSet(viewsets.ModelViewSet):
-    queryset = ProductionBatch.objects.prefetch_related(
-        'inputs__stock_lot__item',
-        'outputs__item',
-        'chemical_usage__stock_lot__item'
-    ).select_related('process', 'manager').all()
+    queryset = ProductionBatch.objects.select_related('process', 'manager').all()
     serializer_class = ProductionBatchSerializer
-    search_fields = ['batch_number', 'process__name', 'process__code', 'status']
+    search_fields = ['batch_number', 'process__name', 'status']
     filterset_fields = ['status', 'process']
-    ordering_fields = ['batch_number', 'started_at', 'expected_completion', 'status']
+    ordering_fields = ['batch_number', 'start_date', 'status']

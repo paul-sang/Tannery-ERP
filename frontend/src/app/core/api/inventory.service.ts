@@ -45,6 +45,36 @@ export interface StockLot {
   item_details: Item;
   current_primary_quantity: number;
   current_secondary_quantity: number | null;
+  source_document_line: number | null;
+}
+
+export interface InventoryDocumentLine {
+  item: number;
+  movement_type: 'IN' | 'OUT';
+  quantity: number;
+  secondary_quantity?: number | null;
+  notes?: string;
+  lot_tracking_number?: string;
+  // Read-only
+  id?: number;
+  item_details?: Item;
+  stock_lot?: number;
+  stock_lot_details?: StockLot;
+}
+
+export interface InventoryDocument {
+  id?: number;
+  document_number?: string;
+  document_type: string;
+  document_type_display?: string;
+  date?: string;
+  notes?: string;
+  user?: number;
+  user_name?: string;
+  purchase_order?: number | null;
+  sales_order?: number | null;
+  production_batch?: number | null;
+  lines: InventoryDocumentLine[];
 }
 
 @Injectable({
@@ -74,7 +104,7 @@ export class InventoryService {
   }
 
   // --- Items ---
-  getItems(page: number = 1, pageSize: number = 10, search?: string, category?: string, ordering?: string): Observable<PaginatedResponse<Item>> {
+  getItems(page: number = 1, pageSize: number = 10, search?: string, category?: string, ordering?: string, trackByLot?: boolean): Observable<PaginatedResponse<Item>> {
     let params = new HttpParams()
       .set('page', page.toString())
       .set('page_size', pageSize.toString());
@@ -87,6 +117,9 @@ export class InventoryService {
     }
     if (ordering) {
       params = params.set('ordering', ordering);
+    }
+    if (trackByLot !== undefined) {
+      params = params.set('track_by_lot', trackByLot.toString());
     }
     return this.http.get<PaginatedResponse<Item>>(`${this.apiUrl}/items/`, { params });
   }
@@ -123,6 +156,29 @@ export class InventoryService {
 
   createStockLot(data: any): Observable<StockLot> {
     return this.http.post<StockLot>(`${this.apiUrl}/lots/`, data);
+  }
+
+  // --- Inventory Documents ---
+  getDocuments(page: number = 1, pageSize: number = 10, search?: string, docType?: string): Observable<PaginatedResponse<InventoryDocument>> {
+    let params = new HttpParams()
+      .set('page', page.toString())
+      .set('page_size', pageSize.toString());
+    
+    if (search) {
+      params = params.set('search', search);
+    }
+    if (docType) {
+      params = params.set('document_type', docType);
+    }
+    return this.http.get<PaginatedResponse<InventoryDocument>>(`${this.apiUrl}/documents/`, { params });
+  }
+
+  getDocument(id: number): Observable<InventoryDocument> {
+    return this.http.get<InventoryDocument>(`${this.apiUrl}/documents/${id}/`);
+  }
+
+  createDocument(data: any): Observable<InventoryDocument> {
+    return this.http.post<InventoryDocument>(`${this.apiUrl}/documents/`, data);
   }
 
   // --- External Stock Movements ---

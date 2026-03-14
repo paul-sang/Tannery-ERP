@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import (
     ProductionStage, ProductionProcess, ProcessInput, ProcessOutput, ProcessChemical,
-    ProductionBatch, BatchInput, BatchOutput, BatchChemicalUsage
+    ProductionBatch
 )
 from apps.inventory.serializers import ItemSerializer
 
@@ -45,38 +45,17 @@ class ProductionProcessSerializer(serializers.ModelSerializer):
             'expected_inputs', 'expected_outputs', 'chemicals'
         ]
 
-# --- ACTUAL BATCH EXECUTION SERIALIZERS ---
-class BatchInputSerializer(serializers.ModelSerializer):
-    lot_tracking_number = serializers.CharField(source='stock_lot.lot_tracking_number', read_only=True)
-    item_name = serializers.CharField(source='stock_lot.item.name', read_only=True)
-    class Meta:
-        model = BatchInput
-        fields = ['id', 'batch', 'stock_lot', 'lot_tracking_number', 'item_name', 'quantity_weight', 'hide_count']
-
-class BatchOutputSerializer(serializers.ModelSerializer):
-    item_details = ItemSerializer(source='item', read_only=True)
-    class Meta:
-        model = BatchOutput
-        fields = ['id', 'batch', 'item', 'item_details', 'quantity', 'hide_count']
-
-class BatchChemicalUsageSerializer(serializers.ModelSerializer):
-    lot_tracking_number = serializers.CharField(source='stock_lot.lot_tracking_number', read_only=True)
-    item_name = serializers.CharField(source='stock_lot.item.name', read_only=True)
-    class Meta:
-        model = BatchChemicalUsage
-        fields = ['id', 'batch', 'stock_lot', 'lot_tracking_number', 'item_name', 'planned_quantity', 'actual_quantity']
-
+# --- BATCH EXECUTION SERIALIZER ---
+# NOTE: Batch inputs/outputs/chemicals are now handled via InventoryDocument.
+# Use the InventoryDocument API filtered by production_batch to retrieve
+# consumption and output details for a given batch.
 class ProductionBatchSerializer(serializers.ModelSerializer):
     process_name = serializers.CharField(source='process.name', read_only=True)
     manager_name = serializers.CharField(source='manager.username', read_only=True)
-    
-    inputs = BatchInputSerializer(many=True, read_only=True)
-    outputs = BatchOutputSerializer(many=True, read_only=True)
-    chemical_usage = BatchChemicalUsageSerializer(many=True, read_only=True)
 
     class Meta:
         model = ProductionBatch
         fields = [
             'id', 'batch_number', 'process', 'process_name', 'start_date', 'end_date', 
-            'status', 'manager', 'manager_name', 'inputs', 'outputs', 'chemical_usage'
+            'status', 'manager', 'manager_name'
         ]
