@@ -21,24 +21,24 @@ export class ProcessListComponent implements OnInit {
   isLoading = signal<boolean>(true);
   isFormOpen = signal<boolean>(false);
 
-  // Pagination State
   totalItems = signal<number>(0);
   currentPage = signal<number>(1);
   pageSize = signal<number>(10);
-
-  // Search State
   searchControl = new FormControl('');
   searchQuery = signal<string>('');
-
-  // Sorting State
   activeOrdering = signal<string>('');
 
+  // Detail offcanvas
+  selectedProcess = signal<ProductionProcess | null>(null);
+  isDetailOpen = signal<boolean>(false);
+  editingProcess = signal<ProductionProcess | null>(null);
+
   tableColumns: TableColumn[] = [
-    { key: 'code', label: 'Process Code', sortable: true },
     { key: 'name', label: 'Recipe Name', sortable: true },
     { key: 'stage_name', label: 'Production Stage' },
-    { key: 'target_item_name', label: 'Target Output' },
-    { key: 'duration', label: 'Duration (Hrs)', sortable: true, sortKey: 'approximate_duration_hours' },
+    { key: 'inputs_count', label: 'Inputs' },
+    { key: 'chemicals_count', label: 'Chemicals' },
+    { key: 'outputs_count', label: 'Outputs' },
     { key: 'status_badge', label: 'Status', type: 'badge' }
   ];
 
@@ -51,7 +51,6 @@ export class ProcessListComponent implements OnInit {
       this.currentPage.set(1);
       this.fetchProcesses();
     });
-
     this.fetchProcesses();
   }
 
@@ -61,16 +60,16 @@ export class ProcessListComponent implements OnInit {
       next: (response) => {
         const mappedData = response.results.map((proc: ProductionProcess) => ({
           ...proc,
-          stage_name: proc.stage.name,
-          target_item_name: proc.target_item ? proc.target_item.name : 'Intermediate',
-          duration: `${proc.approximate_duration_hours}h`,
-          status_badge: proc.is_active ? 'Active' : 'Archived'
+          inputs_count: proc.expected_inputs?.length ?? 0,
+          chemicals_count: proc.chemicals?.length ?? 0,
+          outputs_count: proc.expected_outputs?.length ?? 0,
+          status_badge: proc.is_active ? 'Active' : 'Inactive'
         }));
         this.processes.set(mappedData as any);
         this.totalItems.set(response.count);
         this.isLoading.set(false);
       },
-      error: (err: Error) => {
+      error: () => {
         this.toastService.error('Connection Error', 'Failed to load Production Recipes.');
         this.isLoading.set(false);
       }
@@ -78,19 +77,28 @@ export class ProcessListComponent implements OnInit {
   }
 
   onRowClick(row: any) {
-    this.toastService.success('Recipe Selected', `Opening formulation for ${row.name}`);
+    this.selectedProcess.set(row as ProductionProcess);
+    this.isDetailOpen.set(true);
   }
 
-  openForm() {
+  closeDetail() {
+    this.isDetailOpen.set(false);
+    this.selectedProcess.set(null);
+  }
+
+  openForm(process?: ProductionProcess) {
+    this.editingProcess.set(process || null);
     this.isFormOpen.set(true);
   }
 
   closeForm() {
     this.isFormOpen.set(false);
+    this.editingProcess.set(null);
   }
 
   onProcessSaved() {
     this.fetchProcesses();
+    this.closeDetail();
   }
 
   onPageChange(page: number) {

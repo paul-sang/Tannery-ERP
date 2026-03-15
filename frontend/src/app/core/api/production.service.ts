@@ -7,28 +7,70 @@ import { Item, PaginatedResponse } from './inventory.service';
 export interface ProductionStage {
   id: number;
   name: string;
-  order: number;
-  description: string;
+  sequence_order: number;
+}
+
+export interface ProcessInput {
+  id?: number;
+  process?: number;
+  item: number;
+  item_details?: Item;
+  expected_percentage: number | null;
+}
+
+export interface ProcessOutput {
+  id?: number;
+  process?: number;
+  item: number;
+  item_details?: Item;
+  expected_yield_percentage: number | null;
+}
+
+export interface ProcessChemical {
+  id?: number;
+  process?: number;
+  item: number;
+  item_details?: Item;
+  quantity_percentage: number;
+  sequence_order: number;
+  ph_target: number | null;
+  temperature_celsius: number | null;
+  duration_minutes: number;
 }
 
 export interface ProductionProcess {
   id: number;
-  code: string;
   name: string;
-  stage: ProductionStage;
-  target_item: Item | null;
-  approximate_duration_hours: number;
+  stage: number;
+  stage_name?: string;
+  description: string;
   is_active: boolean;
+  expected_inputs: ProcessInput[];
+  expected_outputs: ProcessOutput[];
+  chemicals: ProcessChemical[];
 }
 
 export interface ProductionBatch {
   id: number;
   batch_number: string;
-  process: ProductionProcess;
+  process: number;
+  process_name?: string;
+  stage_name?: string;
+  start_date: string;
+  end_date: string | null;
   status: string;
-  started_at: string | null;
-  expected_completion: string | null;
-  completed_at: string | null;
+  manager: number | null;
+  manager_name?: string;
+  notes: string;
+}
+
+export interface BatchSummary {
+  batch: ProductionBatch;
+  recipe: ProductionProcess;
+  consumption_documents: any[];
+  output_documents: any[];
+  total_consumption_docs: number;
+  total_output_docs: number;
 }
 
 @Injectable({
@@ -38,9 +80,12 @@ export class ProductionService {
   private http = inject(HttpClient);
   private apiUrl = `${environment.apiUrl}/production`;
 
-  // --- Support Data ---
-  getStages(): Observable<ProductionStage[]> {
-    return this.http.get<ProductionStage[]>(`${this.apiUrl}/stages/`);
+  // --- Stages ---
+  getStages(page: number = 1, pageSize: number = 50): Observable<PaginatedResponse<ProductionStage>> {
+    const params = new HttpParams()
+      .set('page', page.toString())
+      .set('page_size', pageSize.toString());
+    return this.http.get<PaginatedResponse<ProductionStage>>(`${this.apiUrl}/stages/`, { params });
   }
 
   // --- Processes (Recipes) ---
@@ -48,18 +93,21 @@ export class ProductionService {
     let params = new HttpParams()
       .set('page', page.toString())
       .set('page_size', pageSize.toString());
-      
-    if (search) {
-      params = params.set('search', search);
-    }
-    if (ordering) {
-      params = params.set('ordering', ordering);
-    }
+    if (search) params = params.set('search', search);
+    if (ordering) params = params.set('ordering', ordering);
     return this.http.get<PaginatedResponse<ProductionProcess>>(`${this.apiUrl}/processes/`, { params });
   }
 
-  createProcess(data: Partial<ProductionProcess>): Observable<ProductionProcess> {
+  getProcess(id: number): Observable<ProductionProcess> {
+    return this.http.get<ProductionProcess>(`${this.apiUrl}/processes/${id}/`);
+  }
+
+  createProcess(data: any): Observable<ProductionProcess> {
     return this.http.post<ProductionProcess>(`${this.apiUrl}/processes/`, data);
+  }
+
+  updateProcess(id: number, data: any): Observable<ProductionProcess> {
+    return this.http.put<ProductionProcess>(`${this.apiUrl}/processes/${id}/`, data);
   }
 
   // --- Batches ---
@@ -67,20 +115,38 @@ export class ProductionService {
     let params = new HttpParams()
       .set('page', page.toString())
       .set('page_size', pageSize.toString());
-      
-    if (status) {
-      params = params.set('status', status);
-    }
-    if (search) {
-      params = params.set('search', search);
-    }
-    if (ordering) {
-      params = params.set('ordering', ordering);
-    }
+    if (status) params = params.set('status', status);
+    if (search) params = params.set('search', search);
+    if (ordering) params = params.set('ordering', ordering);
     return this.http.get<PaginatedResponse<ProductionBatch>>(`${this.apiUrl}/batches/`, { params });
   }
 
-  createBatch(data: Partial<ProductionBatch>): Observable<ProductionBatch> {
+  getBatch(id: number): Observable<ProductionBatch> {
+    return this.http.get<ProductionBatch>(`${this.apiUrl}/batches/${id}/`);
+  }
+
+  createBatch(data: any): Observable<ProductionBatch> {
     return this.http.post<ProductionBatch>(`${this.apiUrl}/batches/`, data);
+  }
+
+  updateBatch(id: number, data: any): Observable<ProductionBatch> {
+    return this.http.patch<ProductionBatch>(`${this.apiUrl}/batches/${id}/`, data);
+  }
+
+  // --- Batch Actions ---
+  consumeBatch(batchId: number, lines: any[]): Observable<any> {
+    return this.http.post(`${this.apiUrl}/batches/${batchId}/consume/`, { lines });
+  }
+
+  produceBatch(batchId: number, lines: any[]): Observable<any> {
+    return this.http.post(`${this.apiUrl}/batches/${batchId}/produce/`, { lines });
+  }
+
+  batchSummary(batchId: number): Observable<BatchSummary> {
+    return this.http.get<BatchSummary>(`${this.apiUrl}/batches/${batchId}/summary/`);
+  }
+
+  updateBatchStatus(batchId: number, status: string): Observable<ProductionBatch> {
+    return this.http.patch<ProductionBatch>(`${this.apiUrl}/batches/${batchId}/update_status/`, { status });
   }
 }

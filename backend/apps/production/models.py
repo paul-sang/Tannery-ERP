@@ -6,13 +6,17 @@ class ProductionStage(models.Model):
     name = models.CharField(max_length=100)
     sequence_order = models.PositiveIntegerField()
 
+    class Meta:
+        ordering = ['sequence_order']
+
     def __str__(self):
         return f"{self.sequence_order}. {self.name}"
 
 class ProductionProcess(models.Model):
     name = models.CharField(max_length=100)
     stage = models.ForeignKey(ProductionStage, on_delete=models.CASCADE, related_name='processes')
-    description = models.TextField(blank=True, null=True)
+    description = models.TextField(blank=True, default='')
+    is_active = models.BooleanField(default=True)
 
     def __str__(self):
         return self.name
@@ -36,12 +40,16 @@ class ProcessChemical(models.Model):
     temperature_celsius = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     duration_minutes = models.PositiveIntegerField()
 
+    class Meta:
+        ordering = ['sequence_order']
+
 class ProductionBatch(models.Model):
     class Status(models.TextChoices):
         PENDING = 'PENDING', 'Pending'
         IN_PROGRESS = 'IN_PROGRESS', 'In Progress'
         QA_HOLD = 'QA_HOLD', 'QA Hold'
         COMPLETED = 'COMPLETED', 'Completed'
+        CANCELLED = 'CANCELLED', 'Cancelled'
 
     batch_number = models.CharField(max_length=100, unique=True)
     process = models.ForeignKey(ProductionProcess, on_delete=models.PROTECT)
@@ -49,11 +57,10 @@ class ProductionBatch(models.Model):
     end_date = models.DateTimeField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     manager = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='managed_batches')
+    notes = models.TextField(blank=True, default='')
+
+    class Meta:
+        ordering = ['-start_date']
 
     def __str__(self):
         return f"Batch {self.batch_number} - {self.process.name}"
-
-# NOTE: BatchInput, BatchOutput, and BatchChemicalUsage have been removed.
-# Their functionality is now handled by InventoryDocument with document_type
-# PRODUCTION_CONSUMPTION and PRODUCTION_OUTPUT, linked via
-# InventoryDocument.production_batch FK for full traceability.

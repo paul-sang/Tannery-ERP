@@ -1,84 +1,25 @@
-<app-modal 
-  [title]="'Start Production Batch'" 
-  [isOpen]="isOpen" 
-  (close)="closeForm.emit()">
-  
-  <form [formGroup]="form" (ngSubmit)="onSubmit()" class="space-y-5">
-    
-    <!-- Code & Process -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-      <div>
-        <label for="batch_number" class="block text-sm font-medium text-text mb-1">Batch Number *</label>
-        <input type="text" id="batch_number" formControlName="batch_number" 
-               class="w-full px-3 py-2 border border-border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm"
-               placeholder="e.g. BAT-2026-001"
-               [ngClass]="{'border-danger focus:ring-danger focus:border-primary': form.get('batch_number')?.invalid && form.get('batch_number')?.touched}">
-        @if (form.get('batch_number')?.invalid && form.get('batch_number')?.touched) {
-          <p class="mt-1 text-xs text-danger">Batch Number is required.</p>
+<app-modal title="New Production Batch" [isOpen]="isOpen" (close)="closeForm.emit()">
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" class="space-y-4">
+    <div>
+      <label class="block text-xs font-medium text-text mb-1">Recipe (Process) *</label>
+      <select formControlName="process" class="w-full px-3 py-2 border border-border rounded-lg shadow-sm focus:ring-2 focus:ring-primary focus:border-primary text-sm bg-surface">
+        <option [ngValue]="null" disabled>Select a recipe...</option>
+        @for (p of processes; track p.id) {
+          <option [ngValue]="p.id">{{ p.name }} ({{ p.stage_name }})</option>
         }
-      </div>
-
-      <div>
-        <label for="process" class="block text-sm font-medium text-text mb-1">Recipe / Process *</label>
-        <select id="process" formControlName="process" 
-                class="w-full px-3 py-2 border border-border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm bg-surface"
-                [ngClass]="{'border-danger focus:ring-danger focus:border-primary': form.get('process')?.invalid && form.get('process')?.touched}">
-          <option [ngValue]="null" disabled selected>Select recipe...</option>
-          @for (pr of processes; track pr.id) {
-            <option [ngValue]="pr.id">{{ pr.code }} - {{ pr.name }} ({{ pr.stage.name }})</option>
-          }
-        </select>
-      </div>
+      </select>
     </div>
-
-    <!-- Status & Timing -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-      
-      <div>
-        <label for="status" class="block text-sm font-medium text-text mb-1">Status *</label>
-        <select id="status" formControlName="status" 
-                class="w-full px-3 py-2 border border-border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm bg-surface">
-          @for (s of statusOptions; track s) {
-            <option [ngValue]="s">{{ s }}</option>
-          }
-        </select>
-      </div>
-
-      <div>
-        <label for="started_at" class="block text-sm font-medium text-text mb-1">Start Time (Optional)</label>
-        <input type="datetime-local" id="started_at" formControlName="started_at" 
-               class="w-full px-3 py-2 border border-border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm bg-surface text-text-muted">
-      </div>
-
-      <div>
-        <label for="expected_completion" class="block text-sm font-medium text-text mb-1">Expected End (Optional)</label>
-        <input type="datetime-local" id="expected_completion" formControlName="expected_completion" 
-               class="w-full px-3 py-2 border border-border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm bg-surface text-text-muted">
-      </div>
-
+    <div>
+      <label class="block text-xs font-medium text-text mb-1">Notes</label>
+      <textarea formControlName="notes" rows="2" class="w-full px-3 py-2 border border-border rounded-lg shadow-sm focus:ring-2 focus:ring-primary focus:border-primary text-sm" placeholder="Optional notes..."></textarea>
     </div>
+    <p class="text-xs text-text-muted">Batch number will be auto-generated. Status starts as Pending.</p>
 
-    <!-- Footer Action Area -->
-    <div modal-footer class="px-6 py-4 bg-surface-alt border-t border-border flex items-center justify-end space-x-3 rounded-b-xl leading-none">
-      <button type="button" (click)="closeForm.emit()"
-              class="px-4 py-2 text-sm font-medium text-text bg-surface border border-border rounded-lg hover:bg-surface-alt focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer transition">
-        Cancel
-      </button>
-      <button type="submit" [disabled]="isSubmitting"
-              class="px-4 py-2 text-sm font-medium text-white bg-primary border border-transparent rounded-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition">
-        @if (isSubmitting) {
-          <span class="flex items-center">
-            <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            Saving...
-          </span>
-        } @else {
-          Start Batch
-        }
+    <div modal-footer class="px-6 py-4 bg-surface-alt border-t border-border flex justify-end gap-3 rounded-b-xl">
+      <button type="button" (click)="closeForm.emit()" class="px-4 py-2 text-sm font-medium text-text bg-surface border border-border rounded-lg hover:bg-surface-alt cursor-pointer transition">Cancel</button>
+      <button type="submit" [disabled]="isSubmitting" class="px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary/90 cursor-pointer disabled:opacity-50 transition">
+        {{ isSubmitting ? 'Creating...' : 'Create Batch' }}
       </button>
     </div>
-
   </form>
 </app-modal>

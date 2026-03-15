@@ -1,0 +1,209 @@
+@if (isLoading()) {
+  <div class="flex items-center justify-center h-64">
+    <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-primary"></div>
+  </div>
+} @else if (summary()) {
+  <div class="animate-fade-in-up max-w-6xl mx-auto">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+      <div class="flex items-center gap-3">
+        <button (click)="goBack()" class="text-text-muted hover:text-text cursor-pointer p-1.5 rounded-lg hover:bg-surface-alt transition">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        </button>
+        <div>
+          <h1 class="text-2xl font-semibold text-text">{{ summary()!.batch.batch_number }}</h1>
+          <p class="text-sm text-text-muted">{{ summary()!.batch.process_name }} · {{ summary()!.batch.stage_name }}</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider"
+          [ngClass]="{
+            'bg-surface-alt text-text-muted': summary()!.batch.status === 'PENDING',
+            'bg-primary/15 text-primary': summary()!.batch.status === 'IN_PROGRESS',
+            'bg-warning/15 text-warning': summary()!.batch.status === 'QA_HOLD',
+            'bg-success/15 text-success': summary()!.batch.status === 'COMPLETED',
+            'bg-danger/15 text-danger': summary()!.batch.status === 'CANCELLED'
+          }">
+          {{ summary()!.batch.status.replace('_', ' ') }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Info Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <div class="bg-surface border border-border rounded-lg p-4">
+        <p class="text-xs text-text-muted mb-1">Manager</p>
+        <p class="text-sm font-semibold text-text">{{ summary()!.batch.manager_name || 'Unassigned' }}</p>
+      </div>
+      <div class="bg-surface border border-border rounded-lg p-4">
+        <p class="text-xs text-text-muted mb-1">Started</p>
+        <p class="text-sm font-semibold text-text">{{ summary()!.batch.start_date | date:'medium' }}</p>
+      </div>
+      <div class="bg-surface border border-border rounded-lg p-4">
+        <p class="text-xs text-text-muted mb-1">Consumption Docs</p>
+        <p class="text-sm font-semibold text-primary">{{ summary()!.total_consumption_docs }}</p>
+      </div>
+      <div class="bg-surface border border-border rounded-lg p-4">
+        <p class="text-xs text-text-muted mb-1">Output Docs</p>
+        <p class="text-sm font-semibold text-success">{{ summary()!.total_output_docs }}</p>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    @if (summary()!.batch.status !== 'COMPLETED' && summary()!.batch.status !== 'CANCELLED') {
+      <div class="flex flex-wrap gap-3 mb-6">
+        @if (summary()!.batch.status === 'PENDING') {
+          <button (click)="updateStatus('IN_PROGRESS')" class="px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary/90 cursor-pointer transition">▶ Start Batch</button>
+        }
+        @if (summary()!.batch.status === 'IN_PROGRESS') {
+          <button (click)="openConsume()" class="px-4 py-2 text-sm font-medium text-white bg-warning rounded-lg hover:bg-warning/90 cursor-pointer transition">📦 Record Consumption</button>
+          <button (click)="openProduce()" class="px-4 py-2 text-sm font-medium text-white bg-success rounded-lg hover:bg-success/90 cursor-pointer transition">✅ Record Output</button>
+          <button (click)="updateStatus('QA_HOLD')" class="px-4 py-2 text-sm font-medium text-warning bg-warning/10 border border-warning/20 rounded-lg hover:bg-warning/20 cursor-pointer transition">⏸ QA Hold</button>
+          <button (click)="updateStatus('COMPLETED')" class="px-4 py-2 text-sm font-medium text-success bg-success/10 border border-success/20 rounded-lg hover:bg-success/20 cursor-pointer transition">🏁 Complete</button>
+        }
+        @if (summary()!.batch.status === 'QA_HOLD') {
+          <button (click)="updateStatus('IN_PROGRESS')" class="px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary/90 cursor-pointer transition">▶ Resume</button>
+          <button (click)="updateStatus('COMPLETED')" class="px-4 py-2 text-sm font-medium text-success bg-success/10 border border-success/20 rounded-lg hover:bg-success/20 cursor-pointer transition">🏁 Complete</button>
+        }
+        <button (click)="updateStatus('CANCELLED')" class="px-4 py-2 text-sm font-medium text-danger bg-danger/10 border border-danger/20 rounded-lg hover:bg-danger/20 cursor-pointer transition">✖ Cancel Batch</button>
+      </div>
+    }
+
+    <!-- Recipe Preview -->
+    <div class="bg-surface border border-border rounded-lg p-5 mb-6">
+      <h2 class="text-sm font-semibold text-text mb-3">📋 Recipe: {{ summary()!.recipe.name }}</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <h4 class="text-xs font-semibold text-warning mb-1.5">Inputs</h4>
+          @for (inp of summary()!.recipe.expected_inputs; track inp.id) {
+            <div class="text-xs text-text-muted mb-1">{{ inp.item_details?.name }} <span class="text-text">{{ inp.expected_percentage }}%</span></div>
+          } @empty { <p class="text-xs text-text-muted italic">None</p> }
+        </div>
+        <div>
+          <h4 class="text-xs font-semibold text-info-foreground mb-1.5">Chemicals</h4>
+          @for (chem of summary()!.recipe.chemicals; track chem.id) {
+            <div class="text-xs text-text-muted mb-1">{{ chem.sequence_order }}. {{ chem.item_details?.name }} <span class="text-text">{{ chem.quantity_percentage }}%</span> · {{ chem.duration_minutes }}min</div>
+          } @empty { <p class="text-xs text-text-muted italic">None</p> }
+        </div>
+        <div>
+          <h4 class="text-xs font-semibold text-success mb-1.5">Outputs</h4>
+          @for (out of summary()!.recipe.expected_outputs; track out.id) {
+            <div class="text-xs text-text-muted mb-1">{{ out.item_details?.name }} <span class="text-text">{{ out.expected_yield_percentage }}% yield</span></div>
+          } @empty { <p class="text-xs text-text-muted italic">None</p> }
+        </div>
+      </div>
+    </div>
+
+    <!-- Document Timeline -->
+    <div class="bg-surface border border-border rounded-lg p-5">
+      <h2 class="text-sm font-semibold text-text mb-3">📄 Document Timeline</h2>
+      @if (summary()!.consumption_documents.length === 0 && summary()!.output_documents.length === 0) {
+        <p class="text-sm text-text-muted text-center py-6">No documents recorded yet. Use the buttons above to record consumption or output.</p>
+      } @else {
+        <div class="space-y-3">
+          @for (doc of summary()!.consumption_documents; track doc.id) {
+            <div class="flex items-start gap-3 bg-warning/5 border border-warning/15 rounded-lg p-3">
+              <span class="text-warning text-lg mt-0.5">📦</span>
+              <div class="flex-1">
+                <div class="flex justify-between items-start">
+                  <span class="text-sm font-semibold text-text">{{ doc.document_number }}</span>
+                  <span class="text-xs text-text-muted">{{ doc.date | date:'short' }}</span>
+                </div>
+                <p class="text-xs text-text-muted">Consumption · {{ doc.lines?.length }} item(s)</p>
+                @for (line of doc.lines; track line.id) {
+                  <span class="text-xs text-text-muted">{{ line.item_details?.name }}: {{ line.quantity }} {{ line.item_details?.uom_details?.abbreviation }} · </span>
+                }
+              </div>
+            </div>
+          }
+          @for (doc of summary()!.output_documents; track doc.id) {
+            <div class="flex items-start gap-3 bg-success/5 border border-success/15 rounded-lg p-3">
+              <span class="text-success text-lg mt-0.5">✅</span>
+              <div class="flex-1">
+                <div class="flex justify-between items-start">
+                  <span class="text-sm font-semibold text-text">{{ doc.document_number }}</span>
+                  <span class="text-xs text-text-muted">{{ doc.date | date:'short' }}</span>
+                </div>
+                <p class="text-xs text-text-muted">Output · {{ doc.lines?.length }} item(s)</p>
+                @for (line of doc.lines; track line.id) {
+                  <span class="text-xs text-text-muted">{{ line.item_details?.name }}: {{ line.quantity }} {{ line.item_details?.uom_details?.abbreviation }} · </span>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Consume Modal -->
+  <app-modal title="Record Consumption" [isOpen]="isConsumeOpen()" (close)="isConsumeOpen.set(false)" [maxWidthClass]="'max-w-3xl'">
+    <form [formGroup]="consumeForm" (ngSubmit)="submitConsume()" class="space-y-4">
+      <p class="text-xs text-text-muted">Materials consumed during this batch. Lines are pre-populated from the recipe.</p>
+      <div formArrayName="lines" class="space-y-2">
+        @for (line of consumeLines.controls; track $index; let i = $index) {
+          <div [formGroupName]="i" class="flex items-center gap-2 bg-surface-alt rounded-lg p-2">
+            <div class="flex-1 relative">
+              <input type="text" formControlName="_item_name" (input)="onItemSearch($any($event.target).value, 'consume', i)" (focus)="onItemSearch($any($event.target).value, 'consume', i)" (blur)="clearSearch()" class="w-full px-3 py-1.5 border border-border rounded-lg text-sm" placeholder="Search item..." autocomplete="off">
+              @if (isSearchActive('consume', i) && filteredItems().length > 0) {
+                <div class="absolute z-50 mt-1 w-full bg-surface border border-border rounded-lg shadow-lg max-h-36 overflow-y-auto">
+                  @for (item of filteredItems(); track item.id) {
+                    <button type="button" (mousedown)="selectItem(item, 'consume', i)" class="w-full text-left px-3 py-1.5 text-sm hover:bg-primary/10 cursor-pointer transition">
+                      <span class="font-medium text-primary">{{ item.sku }}</span> <span class="text-text-muted">{{ item.name }}</span>
+                    </button>
+                  }
+                </div>
+              }
+            </div>
+            <input type="number" formControlName="quantity" min="0.01" step="0.01" class="w-24 px-2 py-1.5 border border-border rounded-lg text-sm text-right" placeholder="Qty">
+            @if (line.value._track_by_lot) {
+              <input type="text" formControlName="lot_tracking_number" class="w-32 px-2 py-1.5 border border-border rounded-lg text-sm" placeholder="Lot #">
+            }
+            <button type="button" (click)="removeConsumeLine(i)" class="text-text-muted hover:text-danger cursor-pointer p-1"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+          </div>
+        }
+      </div>
+      <button type="button" (click)="addConsumeLine()" class="text-xs text-primary cursor-pointer hover:underline">+ Add another line</button>
+      <div modal-footer class="px-6 py-4 bg-surface-alt border-t border-border flex justify-end gap-3 rounded-b-xl">
+        <button type="button" (click)="isConsumeOpen.set(false)" class="px-4 py-2 text-sm font-medium text-text bg-surface border border-border rounded-lg cursor-pointer transition">Cancel</button>
+        <button type="submit" [disabled]="isSubmitting" class="px-4 py-2 text-sm font-medium text-white bg-warning rounded-lg hover:bg-warning/90 cursor-pointer disabled:opacity-50 transition">{{ isSubmitting ? 'Recording...' : 'Record Consumption' }}</button>
+      </div>
+    </form>
+  </app-modal>
+
+  <!-- Produce Modal -->
+  <app-modal title="Record Output" [isOpen]="isProduceOpen()" (close)="isProduceOpen.set(false)" [maxWidthClass]="'max-w-3xl'">
+    <form [formGroup]="produceForm" (ngSubmit)="submitProduce()" class="space-y-4">
+      <p class="text-xs text-text-muted">Products output from this batch. Lines are pre-populated from the recipe.</p>
+      <div formArrayName="lines" class="space-y-2">
+        @for (line of produceLines.controls; track $index; let i = $index) {
+          <div [formGroupName]="i" class="flex items-center gap-2 bg-surface-alt rounded-lg p-2">
+            <div class="flex-1 relative">
+              <input type="text" formControlName="_item_name" (input)="onItemSearch($any($event.target).value, 'produce', i)" (focus)="onItemSearch($any($event.target).value, 'produce', i)" (blur)="clearSearch()" class="w-full px-3 py-1.5 border border-border rounded-lg text-sm" placeholder="Search item..." autocomplete="off">
+              @if (isSearchActive('produce', i) && filteredItems().length > 0) {
+                <div class="absolute z-50 mt-1 w-full bg-surface border border-border rounded-lg shadow-lg max-h-36 overflow-y-auto">
+                  @for (item of filteredItems(); track item.id) {
+                    <button type="button" (mousedown)="selectItem(item, 'produce', i)" class="w-full text-left px-3 py-1.5 text-sm hover:bg-primary/10 cursor-pointer transition">
+                      <span class="font-medium text-primary">{{ item.sku }}</span> <span class="text-text-muted">{{ item.name }}</span>
+                    </button>
+                  }
+                </div>
+              }
+            </div>
+            <input type="number" formControlName="quantity" min="0.01" step="0.01" class="w-24 px-2 py-1.5 border border-border rounded-lg text-sm text-right" placeholder="Qty">
+            @if (line.value._track_by_lot) {
+              <input type="text" formControlName="lot_tracking_number" class="w-32 px-2 py-1.5 border border-border rounded-lg text-sm" placeholder="Lot #">
+            }
+            <button type="button" (click)="removeProduceLine(i)" class="text-text-muted hover:text-danger cursor-pointer p-1"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+          </div>
+        }
+      </div>
+      <button type="button" (click)="addProduceLine()" class="text-xs text-primary cursor-pointer hover:underline">+ Add another line</button>
+      <div modal-footer class="px-6 py-4 bg-surface-alt border-t border-border flex justify-end gap-3 rounded-b-xl">
+        <button type="button" (click)="isProduceOpen.set(false)" class="px-4 py-2 text-sm font-medium text-text bg-surface border border-border rounded-lg cursor-pointer transition">Cancel</button>
+        <button type="submit" [disabled]="isSubmitting" class="px-4 py-2 text-sm font-medium text-white bg-success rounded-lg hover:bg-success/90 cursor-pointer disabled:opacity-50 transition">{{ isSubmitting ? 'Recording...' : 'Record Output' }}</button>
+      </div>
+    </form>
+  </app-modal>
+}

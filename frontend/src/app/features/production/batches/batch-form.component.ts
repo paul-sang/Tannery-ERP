@@ -24,27 +24,16 @@ export class BatchFormComponent implements OnInit {
   processes: ProductionProcess[] = [];
   isSubmitting = false;
 
-  statusOptions = [
-    'Draft',
-    'Pending',
-    'In Progress',
-    'Completed',
-    'Cancelled'
-  ];
-
   constructor() {
     this.form = this.fb.group({
-      batch_number: ['', Validators.required],
       process: [null, Validators.required],
-      status: ['Draft', Validators.required],
-      started_at: [''],
-      expected_completion: ['']
+      notes: ['']
     });
   }
 
   ngOnInit() {
     this.productionService.getProcesses(1, 100).subscribe((res) => {
-      this.processes = res.results;
+      this.processes = res.results.filter((p: ProductionProcess) => p.is_active);
     });
   }
 
@@ -53,22 +42,17 @@ export class BatchFormComponent implements OnInit {
       this.form.markAllAsTouched();
       return;
     }
-
-    const payload = { ...this.form.value };
-    if (!payload.started_at) payload.started_at = null;
-    if (!payload.expected_completion) payload.expected_completion = null;
-
     this.isSubmitting = true;
-    this.productionService.createBatch(payload).subscribe({
+    this.productionService.createBatch(this.form.value).subscribe({
       next: (res: any) => {
-        this.toastService.success('Success', `Production Batch created successfully.`);
+        this.toastService.success('Success', `Batch ${res.batch_number} created successfully.`);
         this.isSubmitting = false;
-        this.form.reset({ status: 'Draft' });
+        this.form.reset();
         this.batchSaved.emit(res);
         this.closeForm.emit();
       },
-      error: (err: any) => {
-        this.toastService.error('Error', 'Failed to save Batch. Check batch number uniqueness.');
+      error: () => {
+        this.toastService.error('Error', 'Failed to create batch.');
         this.isSubmitting = false;
       }
     });

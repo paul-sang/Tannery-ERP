@@ -6,6 +6,7 @@ import { ItemListComponent } from './features/inventory/items/item-list.componen
 import { StocklotListComponent } from './features/inventory/stocklots/stocklot-list.component';
 import { ProcessListComponent } from './features/production/processes/process-list.component';
 import { BatchListComponent } from './features/production/batches/batch-list.component';
+import { BatchDetailComponent } from './features/production/batches/batch-detail.component';
 import { PurchaseOrderListComponent } from './features/commercial/purchases/purchase-order-list.component';
 import { SupplierListComponent } from './features/commercial/suppliers/supplier-list/supplier-list.component';
 import { SalesOrderListComponent } from './features/commercial/sales/sales-order-list.component';
@@ -24,6 +25,7 @@ export const routes: Routes = [
             { path: 'inventory/lots', component: StocklotListComponent },
             { path: 'production/recipes', component: ProcessListComponent },
             { path: 'production/batches', component: BatchListComponent },
+            { path: 'production/batches/:id', component: BatchDetailComponent },
             { path: 'commercial/purchases', component: PurchaseOrderListComponent },
             { path: 'commercial/purchases/suppliers', component: SupplierListComponent },
             { path: 'commercial/sales', component: SalesOrderListComponent },
@@ -32,3 +34,4 @@ export const routes: Routes = [
     },
     { path: '**', redirectTo: 'dashboard' }
 ];
+
