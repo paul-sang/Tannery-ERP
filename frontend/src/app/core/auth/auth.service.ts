@@ -5,6 +5,16 @@ import { environment } from '../../../environments/environment';
 import { tap, catchError } from 'rxjs/operators';
 import { Observable, throwError } from 'rxjs';
 
+export interface UserProfile {
+  id: number;
+  username: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  role: string;
+  is_active: boolean;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -13,6 +23,7 @@ export class AuthService {
   private router = inject(Router);
 
   public isAuthenticated = signal<boolean>(this.hasToken());
+  public currentUser = signal<UserProfile | null>(null);
 
   login(credentials: any): Observable<any> {
     return this.http.post(`${environment.apiUrl}/token/`, credentials).pipe(
@@ -21,9 +32,18 @@ export class AuthService {
           localStorage.setItem('access_token', response.access);
           localStorage.setItem('refresh_token', response.refresh);
           this.isAuthenticated.set(true);
+          this.loadProfile();
         }
       })
     );
+  }
+
+  loadProfile(): void {
+    if (!this.hasToken()) return;
+    this.http.get<UserProfile>(`${environment.apiUrl}/users/me/`).subscribe({
+      next: (user) => this.currentUser.set(user),
+      error: () => {}
+    });
   }
 
   refreshToken(): Observable<any> {
@@ -54,6 +74,7 @@ export class AuthService {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     this.isAuthenticated.set(false);
+    this.currentUser.set(null);
     this.router.navigate(['/login']);
   }
 

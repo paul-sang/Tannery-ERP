@@ -5,6 +5,8 @@ from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
+from apps.inventory.views_dashboard import dashboard_stats
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     
@@ -15,6 +17,10 @@ urlpatterns = [
     # Authentication endpoints
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+
+    # Dashboard
+    path('api/dashboard/', dashboard_stats, name='dashboard-stats'),
+
     # Application endpoints
     path('api/inventory/', include('apps.inventory.urls')),
     path('api/production/', include('apps.production.urls')),
@@ -22,3 +28,4 @@ urlpatterns = [
     path('api/sales/', include('apps.sales.urls')),
     path('api/users/', include('apps.users.urls')),
 ]
+

@@ -1,60 +1,304 @@
-<div class="animate-fade-in-up">
-  <h1 class="text-2xl font-semibold text-text mb-6">Overview Dashboard</h1>
-
-  <!-- Top Metrics Cards -->
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-    
-    <div class="bg-surface rounded-xl shadow-sm p-6 border border-border hover:shadow-md transition-shadow">
-      <div class="flex items-center">
-        <div class="p-3 rounded-full bg-primary/10 text-primary">
-          <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-          </svg>
-        </div>
-        <div class="ml-4">
-          <h2 class="text-sm font-medium text-text-muted uppercase tracking-wide">Total Inventory Value</h2>
-          <p class="mt-1 text-2xl font-bold text-text">$0.00</p>
-        </div>
-      </div>
-    </div>
-
-    <div class="bg-surface rounded-xl shadow-sm p-6 border border-border hover:shadow-md transition-shadow">
-      <div class="flex items-center">
-        <div class="p-3 rounded-full bg-success-light text-success">
-          <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        </div>
-        <div class="ml-4">
-          <h2 class="text-sm font-medium text-text-muted uppercase tracking-wide">Active Production Batches</h2>
-          <p class="mt-1 text-2xl font-bold text-text">0</p>
-        </div>
-      </div>
-    </div>
-
-    <div class="bg-surface rounded-xl shadow-sm p-6 border border-border hover:shadow-md transition-shadow">
-      <div class="flex items-center">
-        <div class="p-3 rounded-full bg-accent/10 text-accent">
-          <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        </div>
-        <div class="ml-4">
-          <h2 class="text-sm font-medium text-text-muted uppercase tracking-wide">Pending Sales Orders</h2>
-          <p class="mt-1 text-2xl font-bold text-text">0</p>
-        </div>
-      </div>
-    </div>
+@if (isLoading()) {
+  <div class="flex items-center justify-center h-64">
+    <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-primary"></div>
   </div>
+} @else if (data()) {
+  <div class="animate-fade-in-up space-y-6">
 
-  <!-- Main Content Area Placeholder -->
-  <div class="bg-surface rounded-xl shadow-sm p-6 border border-border min-h-[400px]">
-    <h3 class="text-lg font-medium text-text mb-4">Recent Activity</h3>
-    <div class="flex flex-col items-center justify-center h-64 text-text-muted space-y-4">
-      <svg class="w-16 h-16 opacity-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-      </svg>
-      <p>No recent activity detected since architecture reset.</p>
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
+      <div>
+        <h1 class="text-2xl font-semibold text-text">{{ greeting() }}, {{ data()!.user.full_name }}</h1>
+        <p class="text-sm text-text-muted mt-0.5">{{ data()!.user.role_display }} · {{ currentTime() | date:'EEEE, MMMM d, y' }}</p>
+      </div>
+      <button (click)="loadDashboard()" class="self-start sm:self-auto px-3 py-1.5 text-xs font-medium text-text-muted bg-surface border border-border rounded-lg hover:bg-surface-alt transition cursor-pointer flex items-center gap-1.5">
+        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        Refresh
+      </button>
     </div>
+
+    <!-- ======== KPI CARDS ======== -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+
+      <!-- Inventory KPIs (ADMIN, INV_MGR) -->
+      @if (showInventory()) {
+        <div (click)="navigateTo('/inventory')" class="bg-surface rounded-xl border border-border p-5 hover:shadow-md hover:border-primary/30 transition-all cursor-pointer group">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="p-2.5 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+            </div>
+            <span class="text-xs font-medium text-text-muted uppercase tracking-wider">Items</span>
+          </div>
+          <p class="text-3xl font-bold text-text">{{ data()!.inventory.items_total }}</p>
+          <p class="text-xs text-text-muted mt-1">{{ data()!.inventory.lots_active }} active lots</p>
+        </div>
+
+        <div (click)="navigateTo('/inventory/lots')" class="bg-surface rounded-xl border border-border p-5 hover:shadow-md hover:border-primary/30 transition-all cursor-pointer group">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="p-2.5 rounded-lg bg-info/10 text-info-foreground group-hover:bg-info-foreground group-hover:text-white transition-colors">
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+            </div>
+            <span class="text-xs font-medium text-text-muted uppercase tracking-wider">Documents</span>
+          </div>
+          <p class="text-3xl font-bold text-text">{{ data()!.inventory.docs_7d }}</p>
+          <p class="text-xs text-text-muted mt-1">last 7 days · {{ data()!.inventory.docs_today }} today</p>
+        </div>
+      }
+
+      <!-- Production KPIs (ADMIN, PROD_MGR) -->
+      @if (showProduction()) {
+        <div (click)="navigateTo('/production/batches')" class="bg-surface rounded-xl border border-border p-5 hover:shadow-md hover:border-primary/30 transition-all cursor-pointer group">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="p-2.5 rounded-lg bg-success/10 text-success group-hover:bg-success group-hover:text-white transition-colors">
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            </div>
+            <span class="text-xs font-medium text-text-muted uppercase tracking-wider">Active Batches</span>
+          </div>
+          <p class="text-3xl font-bold text-text">{{ data()!.production.active_batches }}</p>
+          <p class="text-xs text-text-muted mt-1">{{ data()!.production.pending_batches }} pending · {{ data()!.production.qa_hold_batches }} QA hold</p>
+        </div>
+
+        <div (click)="navigateTo('/production/recipes')" class="bg-surface rounded-xl border border-border p-5 hover:shadow-md hover:border-primary/30 transition-all cursor-pointer group">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="p-2.5 rounded-lg bg-warning/10 text-warning group-hover:bg-warning group-hover:text-white transition-colors">
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+            </div>
+            <span class="text-xs font-medium text-text-muted uppercase tracking-wider">Recipes</span>
+          </div>
+          <p class="text-3xl font-bold text-text">{{ data()!.production.total_processes }}</p>
+          <p class="text-xs text-text-muted mt-1">across {{ data()!.production.total_stages }} stages</p>
+        </div>
+      }
+
+      <!-- Commercial KPIs (ADMIN, SALES, PURCHASES) -->
+      @if (showPurchases()) {
+        <div (click)="navigateTo('/commercial/purchases')" class="bg-surface rounded-xl border border-border p-5 hover:shadow-md hover:border-primary/30 transition-all cursor-pointer group">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="p-2.5 rounded-lg bg-accent/10 text-accent group-hover:bg-accent group-hover:text-white transition-colors">
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z"/></svg>
+            </div>
+            <span class="text-xs font-medium text-text-muted uppercase tracking-wider">Purchase Orders</span>
+          </div>
+          <p class="text-3xl font-bold text-text">{{ data()!.commercial.purchase_orders_pending }}</p>
+          <p class="text-xs text-text-muted mt-1">pending of {{ data()!.commercial.purchase_orders_total }} total</p>
+        </div>
+      }
+
+      @if (showSales()) {
+        <div (click)="navigateTo('/commercial/sales')" class="bg-surface rounded-xl border border-border p-5 hover:shadow-md hover:border-primary/30 transition-all cursor-pointer group">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="p-2.5 rounded-lg bg-danger/10 text-danger group-hover:bg-danger group-hover:text-white transition-colors">
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <span class="text-xs font-medium text-text-muted uppercase tracking-wider">Sales Orders</span>
+          </div>
+          <p class="text-3xl font-bold text-text">{{ data()!.commercial.sales_orders_pending }}</p>
+          <p class="text-xs text-text-muted mt-1">pending of {{ data()!.commercial.sales_orders_total }} total</p>
+        </div>
+      }
+    </div>
+
+    <!-- ======== LOW STOCK ALERTS ======== -->
+    @if (showInventory() && data()!.inventory.low_stock_count > 0) {
+      <div class="bg-danger/5 border border-danger/20 rounded-xl p-5">
+        <div class="flex items-center gap-2 mb-3">
+          <svg class="w-5 h-5 text-danger" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+          <h3 class="text-sm font-semibold text-danger">Low Stock Alert — {{ data()!.inventory.low_stock_count }} item(s)</h3>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+          @for (item of data()!.inventory.low_stock_items; track item.id) {
+            <div class="flex items-center justify-between bg-surface rounded-lg px-3 py-2 border border-danger/10">
+              <div>
+                <span class="text-xs font-medium text-primary">{{ item.sku }}</span>
+                <span class="text-xs text-text ml-1">{{ item.name }}</span>
+              </div>
+              <div class="text-right">
+                <span class="text-xs font-bold text-danger">{{ item.current_stock }}</span>
+                <span class="text-xs text-text-muted"> / {{ item.min_stock_level }}</span>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- ======== MAIN CONTENT GRID ======== -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+      <!-- Recent Production Batches (ADMIN, PROD_MGR) -->
+      @if (showProduction()) {
+        <div class="bg-surface rounded-xl border border-border p-5">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-semibold text-text flex items-center gap-2">
+              <svg class="w-4 h-4 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+              Recent Batches
+            </h3>
+            <a routerLink="/production/batches" class="text-xs text-primary hover:underline cursor-pointer">View all →</a>
+          </div>
+          @if (data()!.production.recent_batches.length > 0) {
+            <div class="space-y-2">
+              @for (batch of data()!.production.recent_batches; track batch.id) {
+                <div (click)="navigateTo('/production/batches/' + batch.id)" class="flex items-center justify-between bg-surface-alt rounded-lg px-3 py-2.5 hover:bg-primary/5 transition cursor-pointer group">
+                  <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold" [ngClass]="getBatchStatusColor(batch.status)">
+                      {{ batch.batch_number.split('-').pop() }}
+                    </div>
+                    <div>
+                      <p class="text-sm font-medium text-text group-hover:text-primary transition">{{ batch.process_name }}</p>
+                      <p class="text-xs text-text-muted">{{ batch.stage_name }} · {{ batch.manager_name }}</p>
+                    </div>
+                  </div>
+                  <span class="px-2 py-0.5 rounded text-xs font-medium" [ngClass]="getBatchStatusColor(batch.status)">
+                    {{ batch.status.replace('_', ' ') }}
+                  </span>
+                </div>
+              }
+            </div>
+          } @else {
+            <p class="text-sm text-text-muted text-center py-8">No recent batches.</p>
+          }
+        </div>
+      }
+
+      <!-- Recent Documents (ADMIN, INV_MGR) -->
+      @if (showInventory()) {
+        <div class="bg-surface rounded-xl border border-border p-5">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-semibold text-text flex items-center gap-2">
+              <svg class="w-4 h-4 text-info-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+              Recent Documents
+            </h3>
+            <a routerLink="/inventory/lots" class="text-xs text-primary hover:underline cursor-pointer">View all →</a>
+          </div>
+          @if (data()!.inventory.recent_documents.length > 0) {
+            <div class="space-y-2">
+              @for (doc of data()!.inventory.recent_documents; track doc.id) {
+                <div class="flex items-center justify-between bg-surface-alt rounded-lg px-3 py-2.5">
+                  <div class="flex items-center gap-3">
+                    <span class="px-2 py-0.5 rounded text-xs font-bold" [ngClass]="getDocTypeColor(doc.document_type)">
+                      {{ doc.document_type }}
+                    </span>
+                    <div>
+                      <p class="text-sm font-medium text-text">{{ doc.document_number }}</p>
+                      <p class="text-xs text-text-muted">{{ getDocTypeLabel(doc.document_type) }}</p>
+                    </div>
+                  </div>
+                  <span class="text-xs text-text-muted">{{ doc.date | date:'short' }}</span>
+                </div>
+              }
+            </div>
+          } @else {
+            <p class="text-sm text-text-muted text-center py-8">No documents yet.</p>
+          }
+        </div>
+      }
+
+      <!-- Quick Actions (ALL ROLES) -->
+      <div class="bg-surface rounded-xl border border-border p-5" [ngClass]="{'lg:col-span-2': !showProduction() || !showInventory()}">
+        <h3 class="text-sm font-semibold text-text mb-4 flex items-center gap-2">
+          <svg class="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+          Quick Actions
+        </h3>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          @if (showInventory()) {
+            <button (click)="navigateTo('/inventory')" class="flex flex-col items-center gap-2 p-4 rounded-lg bg-surface-alt hover:bg-primary/10 hover:border-primary/30 border border-transparent transition cursor-pointer group">
+              <div class="p-2 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+              </div>
+              <span class="text-xs font-medium text-text">Item Catalog</span>
+            </button>
+            <button (click)="navigateTo('/inventory/lots')" class="flex flex-col items-center gap-2 p-4 rounded-lg bg-surface-alt hover:bg-primary/10 hover:border-primary/30 border border-transparent transition cursor-pointer group">
+              <div class="p-2 rounded-lg bg-info/10 text-info-foreground group-hover:bg-info-foreground group-hover:text-white transition-colors">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+              </div>
+              <span class="text-xs font-medium text-text">Stock Tracker</span>
+            </button>
+          }
+          @if (showProduction()) {
+            <button (click)="navigateTo('/production/recipes')" class="flex flex-col items-center gap-2 p-4 rounded-lg bg-surface-alt hover:bg-primary/10 hover:border-primary/30 border border-transparent transition cursor-pointer group">
+              <div class="p-2 rounded-lg bg-warning/10 text-warning group-hover:bg-warning group-hover:text-white transition-colors">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+              </div>
+              <span class="text-xs font-medium text-text">Recipes</span>
+            </button>
+            <button (click)="navigateTo('/production/batches')" class="flex flex-col items-center gap-2 p-4 rounded-lg bg-surface-alt hover:bg-primary/10 hover:border-primary/30 border border-transparent transition cursor-pointer group">
+              <div class="p-2 rounded-lg bg-success/10 text-success group-hover:bg-success group-hover:text-white transition-colors">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+              </div>
+              <span class="text-xs font-medium text-text">Batches</span>
+            </button>
+          }
+          @if (showPurchases()) {
+            <button (click)="navigateTo('/commercial/purchases')" class="flex flex-col items-center gap-2 p-4 rounded-lg bg-surface-alt hover:bg-primary/10 hover:border-primary/30 border border-transparent transition cursor-pointer group">
+              <div class="p-2 rounded-lg bg-accent/10 text-accent group-hover:bg-accent group-hover:text-white transition-colors">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z"/></svg>
+              </div>
+              <span class="text-xs font-medium text-text">Purchases</span>
+            </button>
+          }
+          @if (showSales()) {
+            <button (click)="navigateTo('/commercial/sales')" class="flex flex-col items-center gap-2 p-4 rounded-lg bg-surface-alt hover:bg-primary/10 hover:border-primary/30 border border-transparent transition cursor-pointer group">
+              <div class="p-2 rounded-lg bg-danger/10 text-danger group-hover:bg-danger group-hover:text-white transition-colors">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              </div>
+              <span class="text-xs font-medium text-text">Sales</span>
+            </button>
+          }
+        </div>
+      </div>
+
+      <!-- Production Status Summary (ADMIN, PROD_MGR) -->
+      @if (showProduction()) {
+        <div class="bg-surface rounded-xl border border-border p-5">
+          <h3 class="text-sm font-semibold text-text mb-4 flex items-center gap-2">
+            <svg class="w-4 h-4 text-warning" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+            Batch Status Overview
+          </h3>
+          <div class="space-y-3">
+            <!-- Pending -->
+            <div class="flex items-center gap-3">
+              <span class="w-20 text-xs font-medium text-text-muted">Pending</span>
+              <div class="flex-1 h-3 bg-surface-alt rounded-full overflow-hidden">
+                @if (data()!.production.pending_batches + data()!.production.active_batches + data()!.production.qa_hold_batches + data()!.production.completed_batches > 0) {
+                  <div class="h-full bg-surface-alt rounded-full transition-all" [style.width.%]="(data()!.production.pending_batches / (data()!.production.pending_batches + data()!.production.active_batches + data()!.production.qa_hold_batches + data()!.production.completed_batches)) * 100"></div>
+                }
+              </div>
+              <span class="w-8 text-right text-sm font-bold text-text">{{ data()!.production.pending_batches }}</span>
+            </div>
+            <!-- Active -->
+            <div class="flex items-center gap-3">
+              <span class="w-20 text-xs font-medium text-text-muted">Active</span>
+              <div class="flex-1 h-3 bg-surface-alt rounded-full overflow-hidden">
+                @if (data()!.production.pending_batches + data()!.production.active_batches + data()!.production.qa_hold_batches + data()!.production.completed_batches > 0) {
+                  <div class="h-full bg-primary rounded-full transition-all" [style.width.%]="(data()!.production.active_batches / (data()!.production.pending_batches + data()!.production.active_batches + data()!.production.qa_hold_batches + data()!.production.completed_batches)) * 100"></div>
+                }
+              </div>
+              <span class="w-8 text-right text-sm font-bold text-primary">{{ data()!.production.active_batches }}</span>
+            </div>
+            <!-- QA Hold -->
+            <div class="flex items-center gap-3">
+              <span class="w-20 text-xs font-medium text-text-muted">QA Hold</span>
+              <div class="flex-1 h-3 bg-surface-alt rounded-full overflow-hidden">
+                @if (data()!.production.pending_batches + data()!.production.active_batches + data()!.production.qa_hold_batches + data()!.production.completed_batches > 0) {
+                  <div class="h-full bg-warning rounded-full transition-all" [style.width.%]="(data()!.production.qa_hold_batches / (data()!.production.pending_batches + data()!.production.active_batches + data()!.production.qa_hold_batches + data()!.production.completed_batches)) * 100"></div>
+                }
+              </div>
+              <span class="w-8 text-right text-sm font-bold text-warning">{{ data()!.production.qa_hold_batches }}</span>
+            </div>
+            <!-- Completed -->
+            <div class="flex items-center gap-3">
+              <span class="w-20 text-xs font-medium text-text-muted">Completed</span>
+              <div class="flex-1 h-3 bg-surface-alt rounded-full overflow-hidden">
+                @if (data()!.production.pending_batches + data()!.production.active_batches + data()!.production.qa_hold_batches + data()!.production.completed_batches > 0) {
+                  <div class="h-full bg-success rounded-full transition-all" [style.width.%]="(data()!.production.completed_batches / (data()!.production.pending_batches + data()!.production.active_batches + data()!.production.qa_hold_batches + data()!.production.completed_batches)) * 100"></div>
+                }
+              </div>
+              <span class="w-8 text-right text-sm font-bold text-success">{{ data()!.production.completed_batches }}</span>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+
   </div>
-</div>
+}
