@@ -45,7 +45,7 @@ class ItemViewSet(viewsets.ModelViewSet):
     serializer_class = ItemSerializer
     search_fields = ['sku', 'name', 'category__name', 'uom__name']
     filterset_fields = ['category', 'track_by_lot']
-    ordering_fields = ['id', 'sku', 'name', 'category__name', 'uom__name', 'current_stock']
+    ordering_fields = ['id', 'sku', 'name', 'category__name', 'uom__name', 'current_stock', 'status']
     ordering = ['-id']
 
     @action(detail=True, methods=['get'])

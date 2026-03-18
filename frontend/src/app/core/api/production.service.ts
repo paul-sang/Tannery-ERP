@@ -89,12 +89,14 @@ export class ProductionService {
   }
 
   // --- Processes (Recipes) ---
-  getProcesses(page: number = 1, pageSize: number = 10, search?: string, ordering?: string): Observable<PaginatedResponse<ProductionProcess>> {
+  getProcesses(page: number = 1, pageSize: number = 10, search?: string, ordering?: string, stage?: string, isActive?: string): Observable<PaginatedResponse<ProductionProcess>> {
     let params = new HttpParams()
       .set('page', page.toString())
       .set('page_size', pageSize.toString());
     if (search) params = params.set('search', search);
     if (ordering) params = params.set('ordering', ordering);
+    if (stage) params = params.set('stage', stage);
+    if (isActive) params = params.set('is_active', isActive);
     return this.http.get<PaginatedResponse<ProductionProcess>>(`${this.apiUrl}/processes/`, { params });
   }
 
@@ -111,13 +113,16 @@ export class ProductionService {
   }
 
   // --- Batches ---
-  getBatches(page: number = 1, pageSize: number = 10, status?: string, search?: string, ordering?: string): Observable<PaginatedResponse<ProductionBatch>> {
+  getBatches(page: number = 1, pageSize: number = 10, status?: string, search?: string, ordering?: string, stage?: string, process?: string, manager?: string): Observable<PaginatedResponse<ProductionBatch>> {
     let params = new HttpParams()
       .set('page', page.toString())
       .set('page_size', pageSize.toString());
     if (status) params = params.set('status', status);
     if (search) params = params.set('search', search);
     if (ordering) params = params.set('ordering', ordering);
+    if (stage) params = params.set('process__stage', stage);
+    if (process) params = params.set('process', process);
+    if (manager) params = params.set('manager', manager);
     return this.http.get<PaginatedResponse<ProductionBatch>>(`${this.apiUrl}/batches/`, { params });
   }
 

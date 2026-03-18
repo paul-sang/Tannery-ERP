@@ -22,7 +22,7 @@ class ProductionProcessViewSet(viewsets.ModelViewSet):
     ).select_related('stage').all()
     search_fields = ['name', 'stage__name']
     filterset_fields = ['stage', 'is_active']
-    ordering_fields = ['name']
+    ordering_fields = ['name', 'stage__name', 'is_active']
 
     def get_serializer_class(self):
         if self.action in ['create', 'update', 'partial_update']:
@@ -35,7 +35,7 @@ class ProductionBatchViewSet(viewsets.ModelViewSet):
         'process__stage', 'manager'
     ).all()
     search_fields = ['batch_number', 'process__name', 'status']
-    filterset_fields = ['status', 'process']
+    filterset_fields = ['status', 'process', 'process__stage', 'manager']
     ordering_fields = ['batch_number', 'start_date', 'status']
 
     def get_serializer_class(self):

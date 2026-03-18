@@ -1,16 +1,17 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ProductionService, ProductionProcess } from '../../../core/api/production.service';
+import { ProductionService, ProductionProcess, ProductionStage } from '../../../core/api/production.service';
 import { DataTableComponent, TableColumn } from '../../../shared/components/data-table/data-table.component';
 import { ToastService } from '../../../core/services/toast.service';
 import { ProcessFormComponent } from './process-form.component';
+import { OffcanvasComponent } from '../../../shared/components/offcanvas/offcanvas.component';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 @Component({
   selector: 'app-process-list',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, DataTableComponent, ProcessFormComponent],
+  imports: [CommonModule, ReactiveFormsModule, DataTableComponent, ProcessFormComponent, OffcanvasComponent],
   templateUrl: './process-list.component.html'
 })
 export class ProcessListComponent implements OnInit {
@@ -28,6 +29,12 @@ export class ProcessListComponent implements OnInit {
   searchQuery = signal<string>('');
   activeOrdering = signal<string>('');
 
+  // Filters
+  isFilterOpen = signal<boolean>(false);
+  stages = signal<ProductionStage[]>([]);
+  filterStageControl = new FormControl('');
+  filterStatusControl = new FormControl('');
+
   // Detail offcanvas
   selectedProcess = signal<ProductionProcess | null>(null);
   isDetailOpen = signal<boolean>(false);
@@ -35,14 +42,15 @@ export class ProcessListComponent implements OnInit {
 
   tableColumns: TableColumn[] = [
     { key: 'name', label: 'Recipe Name', sortable: true },
-    { key: 'stage_name', label: 'Production Stage' },
+    { key: 'stage_name', label: 'Production Stage', sortable: true, sortKey: 'stage__name' },
     { key: 'inputs_count', label: 'Inputs' },
     { key: 'chemicals_count', label: 'Chemicals' },
     { key: 'outputs_count', label: 'Outputs' },
-    { key: 'status_badge', label: 'Status', type: 'badge' }
+    { key: 'status_badge', label: 'Status', type: 'badge', sortable: true, sortKey: 'is_active' }
   ];
 
   ngOnInit() {
+    this.fetchStages();
     this.searchControl.valueChanges.pipe(
       debounceTime(300),
       distinctUntilChanged()
@@ -54,9 +62,17 @@ export class ProcessListComponent implements OnInit {
     this.fetchProcesses();
   }
 
+  fetchStages() {
+    this.productionService.getStages().subscribe(response => {
+      this.stages.set(response.results);
+    });
+  }
+
   fetchProcesses() {
     this.isLoading.set(true);
-    this.productionService.getProcesses(this.currentPage(), this.pageSize(), this.searchQuery(), this.activeOrdering()).subscribe({
+    const stage = this.filterStageControl.value || undefined;
+    const isActive = this.filterStatusControl.value || undefined;
+    this.productionService.getProcesses(this.currentPage(), this.pageSize(), this.searchQuery(), this.activeOrdering(), stage, isActive).subscribe({
       next: (response) => {
         const mappedData = response.results.map((proc: ProductionProcess) => ({
           ...proc,
@@ -117,5 +133,27 @@ export class ProcessListComponent implements OnInit {
     this.activeOrdering.set(`${orderPrefix}${event.column}`);
     this.currentPage.set(1);
     this.fetchProcesses();
+  }
+
+  openFilters() {
+    this.isFilterOpen.set(true);
+  }
+
+  closeFilters() {
+    this.isFilterOpen.set(false);
+  }
+
+  applyFilters() {
+    this.currentPage.set(1);
+    this.fetchProcesses();
+    this.closeFilters();
+  }
+
+  clearFilters() {
+    this.filterStageControl.setValue('');
+    this.filterStatusControl.setValue('');
+    this.currentPage.set(1);
+    this.fetchProcesses();
+    this.closeFilters();
   }
 }

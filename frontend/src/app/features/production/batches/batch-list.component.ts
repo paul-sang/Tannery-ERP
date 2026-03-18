@@ -1,23 +1,27 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { ProductionService, ProductionBatch } from '../../../core/api/production.service';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../../environments/environment';
+import { ProductionService, ProductionBatch, ProductionStage, ProductionProcess } from '../../../core/api/production.service';
 import { DataTableComponent, TableColumn } from '../../../shared/components/data-table/data-table.component';
 import { ToastService } from '../../../core/services/toast.service';
 import { BatchFormComponent } from './batch-form.component';
+import { OffcanvasComponent } from '../../../shared/components/offcanvas/offcanvas.component';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 @Component({
   selector: 'app-batch-list',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, DataTableComponent, BatchFormComponent],
+  imports: [CommonModule, ReactiveFormsModule, DataTableComponent, BatchFormComponent, OffcanvasComponent],
   templateUrl: './batch-list.component.html'
 })
 export class BatchListComponent implements OnInit {
   private productionService = inject(ProductionService);
   private toastService = inject(ToastService);
   private router = inject(Router);
+  private http = inject(HttpClient);
 
   batches = signal<any[]>([]);
   isLoading = signal<boolean>(true);
@@ -30,6 +34,16 @@ export class BatchListComponent implements OnInit {
   searchQuery = signal<string>('');
   activeOrdering = signal<string>('');
   activeStatus = signal<string>('');
+
+  // Filters
+  isFilterOpen = signal<boolean>(false);
+  stages = signal<ProductionStage[]>([]);
+  processesList = signal<ProductionProcess[]>([]);
+  managers = signal<any[]>([]);
+  
+  filterStageControl = new FormControl('');
+  filterProcessControl = new FormControl('');
+  filterManagerControl = new FormControl('');
 
   statusTabs = [
     { key: '', label: 'All' },
@@ -50,6 +64,10 @@ export class BatchListComponent implements OnInit {
   ];
 
   ngOnInit() {
+    this.fetchStages();
+    this.fetchProcessesList();
+    this.fetchManagers();
+    
     this.searchControl.valueChanges.pipe(
       debounceTime(300),
       distinctUntilChanged()
@@ -61,6 +79,25 @@ export class BatchListComponent implements OnInit {
     this.fetchBatches();
   }
 
+  fetchStages() {
+    this.productionService.getStages(1, 100).subscribe(res => this.stages.set(res.results));
+  }
+
+  fetchProcessesList() {
+    this.productionService.getProcesses(1, 100).subscribe(res => this.processesList.set(res.results));
+  }
+
+  fetchManagers() {
+    this.http.get<any>(`${environment.apiUrl}/users/`).subscribe({
+      next: (res) => {
+        // Users endpoint usually returns { count, next, previous, results } for paginated data
+        const userList = res.results || res; 
+        this.managers.set(userList);
+      },
+      error: () => console.error('Could not load users')
+    });
+  }
+
   setStatusFilter(status: string) {
     this.activeStatus.set(status);
     this.currentPage.set(1);
@@ -69,11 +106,19 @@ export class BatchListComponent implements OnInit {
 
   fetchBatches() {
     this.isLoading.set(true);
+    
+    const stage = this.filterStageControl.value || undefined;
+    const process = this.filterProcessControl.value || undefined;
+    const manager = this.filterManagerControl.value || undefined;
+    
     this.productionService.getBatches(
       this.currentPage(), this.pageSize(),
       this.activeStatus() || undefined,
       this.searchQuery() || undefined,
-      this.activeOrdering() || undefined
+      this.activeOrdering() || undefined,
+      stage,
+      process,
+      manager
     ).subscribe({
       next: (response) => {
         const mappedData = response.results.map((batch: ProductionBatch) => ({
@@ -106,5 +151,23 @@ export class BatchListComponent implements OnInit {
     this.activeOrdering.set(`${event.direction === 'desc' ? '-' : ''}${event.column}`);
     this.currentPage.set(1);
     this.fetchBatches();
+  }
+
+  openFilters() { this.isFilterOpen.set(true); }
+  closeFilters() { this.isFilterOpen.set(false); }
+
+  applyFilters() {
+    this.currentPage.set(1);
+    this.fetchBatches();
+    this.closeFilters();
+  }
+
+  clearFilters() {
+    this.filterStageControl.setValue('');
+    this.filterProcessControl.setValue('');
+    this.filterManagerControl.setValue('');
+    this.currentPage.set(1);
+    this.fetchBatches();
+    this.closeFilters();
   }
 }

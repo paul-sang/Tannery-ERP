@@ -55,7 +55,7 @@ export class ItemListComponent implements OnInit {
     { key: 'category_name', label: 'Category', sortable: true, sortKey: 'category__name' },
     { key: 'current_stock', label: 'Current Stock', sortable: true },
     { key: 'uom_code', label: 'Primary UOM', sortable: true, sortKey: 'uom__name' },
-    { key: 'status_badge', label: 'Status', type: 'badge' },
+    { key: 'status_badge', label: 'Status', type: 'badge', sortable: true, sortKey: 'status' },
     { key: 'actions', label: 'Actions', type: 'action' }
   ];
 
