@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import (
-    ProductCategory, UnitOfMeasure, Item, StockLot, StockMovement,
-    InventoryDocument, InventoryDocumentLine
+    ProductCategory, UnitOfMeasure, Location, Item, ItemPriceHistory,
+    StockLot, StockMovement, InventoryDocument, InventoryDocumentLine
 )
 
 class ProductCategorySerializer(serializers.ModelSerializer):
@@ -14,28 +14,44 @@ class UnitOfMeasureSerializer(serializers.ModelSerializer):
         model = UnitOfMeasure
         fields = '__all__'
 
+class LocationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Location
+        fields = '__all__'
+
+class ItemPriceHistorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ItemPriceHistory
+        fields = '__all__'
+
 class ItemSerializer(serializers.ModelSerializer):
     category_details = ProductCategorySerializer(source='category', read_only=True)
     uom_details = UnitOfMeasureSerializer(source='uom', read_only=True)
     secondary_uom_details = UnitOfMeasureSerializer(source='secondary_uom', read_only=True)
+    reserved_stock = serializers.DecimalField(max_digits=14, decimal_places=2, read_only=True)
+    in_transit_stock = serializers.DecimalField(max_digits=14, decimal_places=2, read_only=True)
 
     class Meta:
         model = Item
         fields = [
             'id', 'sku', 'name', 'category', 'category_details', 
             'uom', 'uom_details', 'secondary_uom', 'secondary_uom_details',
-            'min_stock_level', 'status', 'attributes', 'track_by_lot', 'current_stock'
+            'min_stock_level', 'reorder_point', 'current_unit_price', 'status', 'attributes', 'track_by_lot', 'current_stock',
+            'reserved_stock', 'in_transit_stock'
         ]
 
 class StockLotSerializer(serializers.ModelSerializer):
     item_details = ItemSerializer(source='item', read_only=True)
+    location_details = LocationSerializer(source='location', read_only=True)
 
     class Meta:
         model = StockLot
         fields = [
             'id', 'item', 'item_details', 'lot_tracking_number', 
             'source_document_line',
-            'current_primary_quantity', 'current_secondary_quantity'
+            'current_primary_quantity', 'current_secondary_quantity',
+            'grade', 'thickness', 'average_size', 'expiry_date',
+            'location', 'location_details'
         ]
 
 class StockMovementSerializer(serializers.ModelSerializer):
@@ -200,7 +216,7 @@ class InventoryDocumentReadSerializer(serializers.ModelSerializer):
         model = InventoryDocument
         fields = [
             'id', 'document_number', 'document_type', 'document_type_display',
-            'date', 'notes', 'user', 'user_name',
+            'status', 'date', 'notes', 'user', 'user_name',
             'purchase_order', 'sales_order', 'production_batch',
             'lines'
         ]

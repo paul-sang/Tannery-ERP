@@ -33,8 +33,9 @@ class ProcessOutput(models.Model):
 
 class ProcessChemical(models.Model):
     process = models.ForeignKey(ProductionProcess, on_delete=models.CASCADE, related_name='chemicals')
-    item = models.ForeignKey(Item, on_delete=models.CASCADE)
-    quantity_percentage = models.DecimalField(max_digits=5, decimal_places=2)
+    item = models.ForeignKey(Item, on_delete=models.CASCADE, null=True, blank=True)
+    instruction = models.CharField(max_length=200, null=True, blank=True)
+    quantity_percentage = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     sequence_order = models.PositiveIntegerField()
     ph_target = models.DecimalField(max_digits=4, decimal_places=2, null=True, blank=True)
     temperature_celsius = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
@@ -53,6 +54,8 @@ class ProductionBatch(models.Model):
 
     batch_number = models.CharField(max_length=100, unique=True)
     process = models.ForeignKey(ProductionProcess, on_delete=models.PROTECT)
+    base_weight = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, help_text="Base weight for calculating chemical recipes")
+    quantity_hides = models.PositiveIntegerField(null=True, blank=True, help_text="Number of hides/skins processed")
     start_date = models.DateTimeField(auto_now_add=True)
     end_date = models.DateTimeField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)

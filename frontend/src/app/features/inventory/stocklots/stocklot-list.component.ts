@@ -4,13 +4,15 @@ import { InventoryService, StockLot, Item } from '../../../core/api/inventory.se
 import { DataTableComponent, TableColumn } from '../../../shared/components/data-table/data-table.component';
 import { ToastService } from '../../../core/services/toast.service';
 import { AdjustmentFormComponent } from './adjustment-form.component';
+import { LotDetailDrawerComponent } from './lot-detail-drawer.component';
+import { ItemDetailDrawerComponent } from './item-detail-drawer.component';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 @Component({
   selector: 'app-stocklot-list',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, DataTableComponent, AdjustmentFormComponent],
+  imports: [CommonModule, ReactiveFormsModule, DataTableComponent, AdjustmentFormComponent, LotDetailDrawerComponent, ItemDetailDrawerComponent],
   templateUrl: './stocklot-list.component.html'
 })
 export class StocklotListComponent implements OnInit {
@@ -42,6 +44,13 @@ export class StocklotListComponent implements OnInit {
 
   // Form state
   isFormOpen = signal<boolean>(false);
+
+  // Drawer states
+  selectedLotId = signal<number | null>(null);
+  isLotDrawerOpen = signal<boolean>(false);
+  
+  selectedItemId = signal<number | null>(null);
+  isItemDrawerOpen = signal<boolean>(false);
 
   // Table columns for lots
   lotColumns: TableColumn[] = [
@@ -90,7 +99,7 @@ export class StocklotListComponent implements OnInit {
   // --- Lot-tracked fetching ---
   fetchLots() {
     this.isLotsLoading.set(true);
-    this.inventoryService.getStockLots(this.lotsPage(), this.lotsPageSize(), undefined, this.lotsSearchQuery(), this.lotsOrdering()).subscribe({
+    this.inventoryService.getStockLots(this.lotsPage(), this.lotsPageSize(), undefined, undefined, this.lotsOrdering(), this.lotsSearchQuery()).subscribe({
       next: (response) => {
         const mappedData = response.results.map((lot: StockLot) => {
           const item = lot.item_details;
@@ -137,11 +146,23 @@ export class StocklotListComponent implements OnInit {
   }
 
   onLotRowClick(row: any) {
-    this.toastService.success('Lot Selected', `Tracking for lot ${row.lot_number} opened.`);
+    this.selectedLotId.set(row.id);
+    this.isLotDrawerOpen.set(true);
   }
 
   onGeneralRowClick(row: any) {
-    this.toastService.success('Item Selected', `Stock details for ${row.name} opened.`);
+    this.selectedItemId.set(row.id);
+    this.isItemDrawerOpen.set(true);
+  }
+
+  closeLotDrawer() {
+    this.isLotDrawerOpen.set(false);
+    this.selectedLotId.set(null);
+  }
+
+  closeItemDrawer() {
+    this.isItemDrawerOpen.set(false);
+    this.selectedItemId.set(null);
   }
 
   openForm() {

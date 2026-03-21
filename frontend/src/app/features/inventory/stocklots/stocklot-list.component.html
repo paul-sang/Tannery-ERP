@@ -108,4 +108,18 @@
     (documentSaved)="onDocumentSaved()">
   </app-adjustment-form>
 
+  <!-- Lot Detail Drawer -->
+  <app-lot-detail-drawer
+    [isOpen]="isLotDrawerOpen()"
+    [lotId]="selectedLotId()"
+    (closeDrawer)="closeLotDrawer()">
+  </app-lot-detail-drawer>
+
+  <!-- Item Detail Drawer -->
+  <app-item-detail-drawer
+    [isOpen]="isItemDrawerOpen()"
+    [itemId]="selectedItemId()"
+    (closeDrawer)="closeItemDrawer()">
+  </app-item-detail-drawer>
+
 </div>

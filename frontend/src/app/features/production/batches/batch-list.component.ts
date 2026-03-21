@@ -6,7 +6,6 @@ import { environment } from '../../../../environments/environment';
 import { ProductionService, ProductionBatch, ProductionStage, ProductionProcess } from '../../../core/api/production.service';
 import { DataTableComponent, TableColumn } from '../../../shared/components/data-table/data-table.component';
 import { ToastService } from '../../../core/services/toast.service';
-import { BatchFormComponent } from './batch-form.component';
 import { OffcanvasComponent } from '../../../shared/components/offcanvas/offcanvas.component';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
@@ -14,7 +13,7 @@ import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 @Component({
   selector: 'app-batch-list',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, DataTableComponent, BatchFormComponent, OffcanvasComponent],
+  imports: [CommonModule, ReactiveFormsModule, DataTableComponent, OffcanvasComponent],
   templateUrl: './batch-list.component.html'
 })
 export class BatchListComponent implements OnInit {
@@ -25,7 +24,6 @@ export class BatchListComponent implements OnInit {
 
   batches = signal<any[]>([]);
   isLoading = signal<boolean>(true);
-  isFormOpen = signal<boolean>(false);
 
   totalItems = signal<number>(0);
   currentPage = signal<number>(1);
@@ -141,9 +139,7 @@ export class BatchListComponent implements OnInit {
     this.router.navigate(['/production/batches', row.id]);
   }
 
-  openForm() { this.isFormOpen.set(true); }
-  closeForm() { this.isFormOpen.set(false); }
-  onBatchSaved() { this.fetchBatches(); }
+  openForm() { this.router.navigate(['/production/batches/new']); }
 
   onPageChange(page: number) { this.currentPage.set(page); this.fetchBatches(); }
   onPageSizeChange(size: number) { this.pageSize.set(size); this.currentPage.set(1); this.fetchBatches(); }

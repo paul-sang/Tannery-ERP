@@ -67,6 +67,7 @@ export interface InventoryDocument {
   document_number?: string;
   document_type: string;
   document_type_display?: string;
+  status?: string;
   date?: string;
   notes?: string;
   user?: number;
@@ -137,20 +138,16 @@ export class InventoryService {
   }
 
   // --- Stock Lots ---
-  getStockLots(page: number = 1, pageSize: number = 10, itemId?: number, search?: string, ordering?: string): Observable<PaginatedResponse<StockLot>> {
+  getStockLots(page: number = 1, pageSize: number = 10, itemId?: number, status?: string, ordering?: string, search?: string): Observable<PaginatedResponse<StockLot>> {
     let params = new HttpParams()
       .set('page', page.toString())
       .set('page_size', pageSize.toString());
       
-    if (itemId) {
-      params = params.set('item', itemId);
-    }
-    if (search) {
-      params = params.set('search', search);
-    }
-    if (ordering) {
-      params = params.set('ordering', ordering);
-    }
+    if (itemId) params = params.set('item', itemId);
+    if (status) params = params.set('status', status);
+    if (search) params = params.set('search', search);
+    if (ordering) params = params.set('ordering', ordering);
+    
     return this.http.get<PaginatedResponse<StockLot>>(`${this.apiUrl}/lots/`, { params });
   }
 
@@ -181,8 +178,43 @@ export class InventoryService {
     return this.http.post<InventoryDocument>(`${this.apiUrl}/documents/`, data);
   }
 
+  voidDocument(documentId: number): Observable<any> {
+    return this.http.post(`${this.apiUrl}/documents/${documentId}/void/`, {});
+  }
+
   // --- External Stock Movements ---
+  getStockMovements(page: number = 1, pageSize: number = 10, itemId?: number, lotId?: number): Observable<PaginatedResponse<any>> {
+    let params = new HttpParams()
+      .set('page', page.toString())
+      .set('page_size', pageSize.toString());
+    
+    if (itemId) {
+      params = params.set('item', itemId);
+    }
+    if (lotId) {
+      params = params.set('stock_lot', lotId);
+    }
+    return this.http.get<PaginatedResponse<any>>(`${this.apiUrl}/movements/`, { params });
+  }
+
   createStockMovement(data: any): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}/movements/`, data);
+  }
+
+  // --- Pricing History ---
+  getItemPriceHistory(id: number, page: number = 1, pageSize: number = 10): Observable<PaginatedResponse<any>> {
+    let params = new HttpParams()
+      .set('page', page.toString())
+      .set('page_size', pageSize.toString());
+    return this.http.get<PaginatedResponse<any>>(`${this.apiUrl}/items/${id}/price_history/`, { params });
+  }
+
+  // --- Get Single Details ---
+  getItem(id: number): Observable<Item> {
+    return this.http.get<Item>(`${this.apiUrl}/items/${id}/`);
+  }
+
+  getLot(id: number): Observable<StockLot> {
+    return this.http.get<StockLot>(`${this.apiUrl}/lots/${id}/`);
   }
 }

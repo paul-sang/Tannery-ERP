@@ -5,14 +5,19 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from .models import (
-    ProductCategory, UnitOfMeasure, Item, StockLot, StockMovement,
-    InventoryDocument, InventoryDocumentLine
+    ProductCategory, UnitOfMeasure, Location, Item, ItemPriceHistory,
+    StockLot, StockMovement, InventoryDocument, InventoryDocumentLine
 )
 from .serializers import (
-    ProductCategorySerializer, UnitOfMeasureSerializer, ItemSerializer,
+    ProductCategorySerializer, UnitOfMeasureSerializer, LocationSerializer,
+    ItemSerializer, ItemPriceHistorySerializer,
     StockLotSerializer, StockMovementSerializer,
     InventoryDocumentWriteSerializer, InventoryDocumentReadSerializer
 )
+
+class LocationViewSet(viewsets.ModelViewSet):
+    queryset = Location.objects.all()
+    serializer_class = LocationSerializer
 
 class ProductCategoryViewSet(viewsets.ModelViewSet):
     queryset = ProductCategory.objects.all()
@@ -40,6 +45,13 @@ class UnitOfMeasureViewSet(viewsets.ModelViewSet):
     queryset = UnitOfMeasure.objects.all()
     serializer_class = UnitOfMeasureSerializer
 
+class ItemPriceHistoryViewSet(viewsets.ModelViewSet):
+    queryset = ItemPriceHistory.objects.all()
+    serializer_class = ItemPriceHistorySerializer
+    filterset_fields = ['item']
+    ordering_fields = ['effective_date', 'price']
+    ordering = ['-effective_date']
+
 class ItemViewSet(viewsets.ModelViewSet):
     queryset = Item.objects.select_related('category', 'uom', 'secondary_uom').all()
     serializer_class = ItemSerializer
@@ -47,6 +59,20 @@ class ItemViewSet(viewsets.ModelViewSet):
     filterset_fields = ['category', 'track_by_lot']
     ordering_fields = ['id', 'sku', 'name', 'category__name', 'uom__name', 'current_stock', 'status']
     ordering = ['-id']
+
+    @action(detail=True, methods=['get'])
+    def price_history(self, request, pk=None):
+        item = self.get_object()
+        history = ItemPriceHistory.objects.filter(item=item).order_by('-effective_date')
+        
+        # Paginate the history manually or return top N
+        page = self.paginate_queryset(history)
+        if page is not None:
+            serializer = ItemPriceHistorySerializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+            
+        serializer = ItemPriceHistorySerializer(history, many=True)
+        return Response(serializer.data)
 
     @action(detail=True, methods=['get'])
     def stock_report(self, request, pk=None):
@@ -101,3 +127,32 @@ class InventoryDocumentViewSet(viewsets.ModelViewSet):
         if self.action in ['create', 'update', 'partial_update']:
             return InventoryDocumentWriteSerializer
         return InventoryDocumentReadSerializer
+
+    @action(detail=True, methods=['post'])
+    def void(self, request, pk=None):
+        """Void an active inventory document and reverse its stock movements."""
+        doc = self.get_object()
+        
+        if doc.status == InventoryDocument.Status.VOIDED:
+            return Response({'detail': 'Document is already voided.'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        from django.db import transaction
+        
+        with transaction.atomic():
+            movements = StockMovement.objects.filter(document_line__document=doc)
+            for sm in movements:
+                rev_type = StockMovement.MovementType.IN if sm.movement_type == StockMovement.MovementType.OUT else StockMovement.MovementType.OUT
+                StockMovement.objects.create(
+                    item=sm.item,
+                    stock_lot=sm.stock_lot,
+                    document_line=sm.document_line,
+                    movement_type=rev_type,
+                    quantity=sm.quantity,
+                    secondary_quantity=sm.secondary_quantity,
+                    reference_document=f"REV-{sm.reference_document}",
+                    user=request.user
+                )
+            doc.status = InventoryDocument.Status.VOIDED
+            doc.save(update_fields=['status'])
+            
+        return Response({'detail': f'Document {doc.document_number} successfully voided.'})

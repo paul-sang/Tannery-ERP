@@ -31,7 +31,15 @@
     </div>
 
     <!-- Info Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+    <div class="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
+      <div class="bg-surface border border-border rounded-lg p-4">
+        <p class="text-xs text-text-muted mb-1">Base Weight</p>
+        <p class="text-sm font-semibold text-text">{{ summary()!.batch.base_weight || '-' }} kg</p>
+      </div>
+      <div class="bg-surface border border-border rounded-lg p-4">
+        <p class="text-xs text-text-muted mb-1">Hides Qty</p>
+        <p class="text-sm font-semibold text-text">{{ summary()!.batch.quantity_hides || '-' }}</p>
+      </div>
       <div class="bg-surface border border-border rounded-lg p-4">
         <p class="text-xs text-text-muted mb-1">Manager</p>
         <p class="text-sm font-semibold text-text">{{ summary()!.batch.manager_name || 'Unassigned' }}</p>
@@ -52,21 +60,298 @@
 
     <!-- Action Buttons -->
     @if (summary()!.batch.status !== 'COMPLETED' && summary()!.batch.status !== 'CANCELLED') {
-      <div class="flex flex-wrap gap-3 mb-6">
-        @if (summary()!.batch.status === 'PENDING') {
-          <button (click)="updateStatus('IN_PROGRESS')" class="px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary/90 cursor-pointer transition">▶ Start Batch</button>
-        }
-        @if (summary()!.batch.status === 'IN_PROGRESS') {
-          <button (click)="openConsume()" class="px-4 py-2 text-sm font-medium text-white bg-warning rounded-lg hover:bg-warning/90 cursor-pointer transition">📦 Record Consumption</button>
-          <button (click)="openProduce()" class="px-4 py-2 text-sm font-medium text-white bg-success rounded-lg hover:bg-success/90 cursor-pointer transition">✅ Record Output</button>
-          <button (click)="updateStatus('QA_HOLD')" class="px-4 py-2 text-sm font-medium text-warning bg-warning/10 border border-warning/20 rounded-lg hover:bg-warning/20 cursor-pointer transition">⏸ QA Hold</button>
-          <button (click)="updateStatus('COMPLETED')" class="px-4 py-2 text-sm font-medium text-success bg-success/10 border border-success/20 rounded-lg hover:bg-success/20 cursor-pointer transition">🏁 Complete</button>
-        }
-        @if (summary()!.batch.status === 'QA_HOLD') {
-          <button (click)="updateStatus('IN_PROGRESS')" class="px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary/90 cursor-pointer transition">▶ Resume</button>
-          <button (click)="updateStatus('COMPLETED')" class="px-4 py-2 text-sm font-medium text-success bg-success/10 border border-success/20 rounded-lg hover:bg-success/20 cursor-pointer transition">🏁 Complete</button>
-        }
-        <button (click)="updateStatus('CANCELLED')" class="px-4 py-2 text-sm font-medium text-danger bg-danger/10 border border-danger/20 rounded-lg hover:bg-danger/20 cursor-pointer transition">✖ Cancel Batch</button>
+      <div class="flex flex-wrap justify-between items-center gap-3 mb-6">
+        <div class="flex flex-wrap gap-2">
+          @if (summary()!.batch.status === 'IN_PROGRESS') {
+            <button (click)="toggleConsumeInputs()" class="px-4 py-2 text-sm font-medium text-white bg-primary/80 rounded-lg hover:bg-primary/90 cursor-pointer transition">📥 {{ isConsumeInputsMode() ? 'Cancel Inputs' : 'Record Inputs' }}</button>
+            <button (click)="toggleConsumeMode()" class="px-4 py-2 text-sm font-medium text-white bg-warning rounded-lg hover:bg-warning/90 cursor-pointer transition">🧪 {{ isConsumeMode() ? 'Cancel Chemicals' : 'Record Chemicals' }}</button>
+            <button (click)="toggleProduce()" class="px-4 py-2 text-sm font-medium text-white bg-success rounded-lg hover:bg-success/90 cursor-pointer transition">✅ {{ isProduceMode() ? 'Cancel Output' : 'Record Output' }}</button>
+          }
+        </div>
+        <div class="flex flex-wrap gap-2 ml-auto">
+          @if (summary()!.batch.status === 'PENDING') {
+            <button (click)="updateStatus('IN_PROGRESS')" class="px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary/90 cursor-pointer transition">▶ Start Batch</button>
+          }
+          @if (summary()!.batch.status === 'IN_PROGRESS') {
+            <button (click)="updateStatus('QA_HOLD')" class="px-4 py-2 text-sm font-medium text-warning bg-warning/10 border border-warning/20 rounded-lg hover:bg-warning/20 cursor-pointer transition">⏸ QA Hold</button>
+            <button (click)="confirmComplete()" class="px-4 py-2 text-sm font-medium text-success bg-success/10 border border-success/20 rounded-lg hover:bg-success/20 cursor-pointer transition">🏁 Complete</button>
+          }
+          @if (summary()!.batch.status === 'QA_HOLD') {
+            <button (click)="updateStatus('IN_PROGRESS')" class="px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary/90 cursor-pointer transition">▶ Resume</button>
+            <button (click)="confirmComplete()" class="px-4 py-2 text-sm font-medium text-success bg-success/10 border border-success/20 rounded-lg hover:bg-success/20 cursor-pointer transition">🏁 Complete</button>
+          }
+          <button (click)="confirmCancel()" class="px-4 py-2 text-sm font-medium text-danger bg-danger/10 border border-danger/20 rounded-lg hover:bg-danger/20 cursor-pointer transition">✖ Cancel Batch</button>
+        </div>
+      </div>
+    }
+
+    @if (summary()!.batch.status === 'COMPLETED' || summary()!.batch.status === 'CANCELLED') {
+      <div class="flex flex-wrap justify-end gap-3 mb-6">
+        <button (click)="reopenBatch()" class="px-4 py-2 text-sm font-medium text-warning bg-warning/10 border border-warning/20 rounded-lg hover:bg-warning/20 cursor-pointer transition">🔄 Reabrir Lote</button>
+      </div>
+    }
+
+    <!-- Consumption Grid Mode -->
+    @if (isConsumeMode()) {
+      <div class="bg-surface border border-warning/30 shadow-lg rounded-xl p-6 mb-6">
+        <div class="flex justify-between items-center mb-4">
+          <div>
+            <h2 class="text-lg font-semibold text-text">Registro de Consumos</h2>
+            <p class="text-sm text-text-muted">Ajusta las cantidades reales consumidas según la receta original o agrega extras.</p>
+          </div>
+        </div>
+        
+        <form [formGroup]="consumeForm" (ngSubmit)="submitConsume()">
+          <div class="border border-border rounded-lg mb-4 overflow-visible">
+            <table class="min-w-full divide-y divide-border">
+              <thead class="bg-surface-alt">
+                <tr>
+                  <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Sec</th>
+                  <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Item / Instrucción</th>
+                  <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-text-muted uppercase tracking-wider">Qty Esperada (kg)</th>
+                  <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-text-muted uppercase tracking-wider">Qty Real</th>
+                  <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Lote / Notas</th>
+                  <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-text-muted uppercase tracking-wider">X</th>
+                </tr>
+              </thead>
+              <tbody formArrayName="lines" class="bg-surface divide-y divide-border">
+                @for (line of consumeLines.controls; track $index; let i = $index) {
+                  <tr [formGroupName]="i" [ngClass]="{'bg-surface-alt/30 opacity-70': line.value._is_instruction}">
+                    <td class="px-4 py-3 whitespace-nowrap text-sm text-text-muted text-center">{{ line.value._sequence_order }}</td>
+                    <td class="px-4 py-3 text-sm text-text font-medium relative">
+                      @if (line.value._is_instruction) {
+                        <span class="text-info-foreground">{{ line.value._item_name }}</span>
+                      } @else if (line.value._sequence_order === 'Extra') {
+                        <input type="text" formControlName="_item_name" (input)="onItemSearch($any($event.target).value, 'consume', i)" (focus)="onItemSearch($any($event.target).value, 'consume', i)" (blur)="clearSearch()" class="w-full px-3 py-1.5 border border-border rounded-md text-sm bg-background focus:ring-primary focus:border-primary" placeholder="Buscar ítem extra..." autocomplete="off">
+                        @if (isSearchActive('consume', i) && filteredItems().length > 0) {
+                          <div class="absolute z-50 mt-1 w-full bg-surface border border-border rounded-lg shadow-lg max-h-36 overflow-y-auto">
+                            @for (item of filteredItems(); track item.id) {
+                              <button type="button" (mousedown)="selectItem(item, 'consume', i)" class="w-full text-left px-3 py-1.5 text-sm hover:bg-primary/10 cursor-pointer transition">
+                                <span class="font-medium text-primary">{{ item.sku }}</span> <span class="text-text-muted">{{ item.name }}</span>
+                              </button>
+                            }
+                          </div>
+                        }
+                      } @else {
+                        <span>{{ line.value._item_name }}</span>
+                      }
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap text-sm text-text-muted text-right">
+                      @if (!line.value._is_instruction) {
+                        {{ line.value._expected_qty | number:'1.2-2' }}
+                      }
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap text-right">
+                      @if (!line.value._is_instruction) {
+                        <div class="flex flex-col items-end">
+                          <input type="number" formControlName="quantity" min="0" step="0.01" 
+                            [ngClass]="{
+                              'border-danger text-danger bg-danger/5': line.value.quantity > line.value._expected_qty || line.value.quantity > line.value._current_stock,
+                              'border-warning text-warning-foreground bg-warning/10': line.value.quantity < line.value._expected_qty && line.value.quantity <= line.value._current_stock
+                            }"
+                            class="w-24 px-2 py-1.5 border border-border rounded-md text-sm text-right focus:ring-primary focus:border-primary transition-colors">
+                          @if (line.value.quantity > line.value._current_stock) {
+                            <span class="text-[10px] text-danger mt-0.5 whitespace-nowrap font-medium">Excede stock actual ({{ line.value._current_stock }})</span>
+                          } @else if (line.value.quantity === 0 && line.value.item) {
+                            <span class="text-[10px] text-warning-foreground mt-0.5 whitespace-nowrap font-medium">Sin consumo</span>
+                          }
+                        </div>
+                      }
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap">
+                      @if (!line.value._is_instruction) {
+                        @if (line.value._track_by_lot) {
+                          <input type="text" formControlName="lot_tracking_number" class="w-full px-2 py-1.5 border border-border rounded-md text-sm focus:ring-primary focus:border-primary" placeholder="Lote #">
+                        } @else {
+                          <span class="text-xs text-text-muted italic">N/A</span>
+                        }
+                      } @else {
+                        <span class="text-xs text-text-muted italic">{{ line.value._duration }} min</span>
+                      }
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap text-center">
+                      @if (!line.value._is_instruction && line.value._sequence_order === 'Extra') {
+                        <button type="button" (click)="removeConsumeLine(i)" class="text-text-muted hover:text-danger cursor-pointer p-1"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          
+          <div class="flex flex-col sm:flex-row justify-between items-center gap-4 pt-2">
+            <button type="button" (click)="addExtraConsumeLine()" class="text-sm font-medium text-primary hover:text-primary/80 transition cursor-pointer flex items-center gap-1">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+              Agregar Ítem Extra
+            </button>
+            <div class="flex gap-3">
+              <button type="button" (click)="toggleConsumeMode()" class="px-4 py-2 text-sm font-medium text-text bg-surface border border-border rounded-lg cursor-pointer transition">Cancelar</button>
+              <button type="submit" [disabled]="isSubmitting || consumeForm.invalid" class="px-5 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary/90 cursor-pointer disabled:opacity-50 transition shadow-sm">
+                {{ isSubmitting ? 'Guardando...' : 'Confirmar Consumos' }}
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    }
+
+    <!-- Inputs Mode (Inline) -->
+    @if (isConsumeInputsMode()) {
+      <div class="bg-surface border border-emerald-500/30 shadow-lg rounded-xl p-6 mb-6">
+        <div class="flex justify-between items-center mb-4">
+          <div>
+            <h2 class="text-lg font-semibold text-text text-emerald-600">Registro de Entradas (M.P.)</h2>
+            <p class="text-sm text-text-muted">Consume materias primas (pieles). Selecciona el lote de origen exacto del cual consumirás.</p>
+          </div>
+        </div>
+        
+        <form [formGroup]="consumeInputsForm" (ngSubmit)="submitConsumeInputs()">
+          <div class="border border-border rounded-lg mb-4 overflow-visible">
+            <table class="min-w-full divide-y divide-border">
+              <thead class="bg-surface-alt">
+                <tr>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-text-muted">Item</th>
+                  <th class="px-4 py-3 text-right text-xs font-medium text-text-muted">Cantidad</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-text-muted">Lote de Origen</th>
+                  <th class="px-4 py-3 text-center text-xs font-medium text-text-muted">ACC</th>
+                </tr>
+              </thead>
+              <tbody formArrayName="lines" class="bg-surface divide-y divide-border">
+                @for (line of consumeInputLines.controls; track $index; let i = $index) {
+                  <tr [formGroupName]="i">
+                    <td class="px-4 py-2 relative">
+                      <input type="text" formControlName="_item_name" (input)="onItemSearch($any($event.target).value, 'consumeInputs', i)" (focus)="onItemSearch($any($event.target).value, 'consumeInputs', i)" (blur)="clearSearch()" class="w-full px-2 py-1 border border-border rounded-md text-sm focus:ring-emerald-500 focus:border-emerald-500" placeholder="Buscar materia prima..." autocomplete="off">
+                      @if (isSearchActive('consumeInputs', i) && filteredItems().length > 0) {
+                        <div class="absolute z-50 mt-1 w-full bg-surface border border-border rounded-md shadow-lg max-h-32 overflow-y-auto">
+                          @for (item of filteredItems(); track item.id) {
+                            <button type="button" (mousedown)="selectItem(item, 'consumeInputs', i)" class="w-full text-left px-2 py-1 text-xs hover:bg-primary/10 transition">
+                              <span class="font-medium text-primary">{{ item.sku }}</span> <span class="text-text-muted">{{ item.name }}</span>
+                            </button>
+                          }
+                        </div>
+                      }
+                    </td>
+                    <td class="px-4 py-2 text-right">
+                      <div class="flex flex-col items-end gap-1">
+                        <div class="flex items-center justify-end w-full gap-1">
+                          <input type="number" formControlName="quantity" min="0" step="1" class="w-16 px-2 py-1 border border-border rounded-md text-sm text-right focus:ring-emerald-500 focus:border-emerald-500 transition-colors" [ngClass]="{'border-danger text-danger bg-danger/5': isInputLineOverStock(i)}">
+                          @if (line.value._track_by_lot && line.value.lot_tracking_number) {
+                            <button type="button" (click)="fillMaxStock(i)" class="px-1.5 py-1 min-w-[36px] text-[10px] font-bold text-emerald-700 bg-emerald-100 hover:bg-emerald-200 border border-emerald-200 rounded cursor-pointer transition-colors" title="Usar todo el stock disponible">MAX</button>
+                          }
+                        </div>
+                        @if (isInputLineOverStock(i)) {
+                          <span class="text-[10px] text-danger whitespace-nowrap font-medium pr-10">Excede stock disp.</span>
+                        }
+                      </div>
+                    </td>
+                    <td class="px-4 py-2">
+                       @if (line.value._track_by_lot) {
+                        <select formControlName="lot_tracking_number" class="w-full px-2 py-1 border border-border rounded-md text-sm focus:ring-emerald-500 focus:border-emerald-500" [ngClass]="{'border-danger': !line.value.lot_tracking_number}">
+                          <option value="" disabled selected>Seleccionar lote de inventario...</option>
+                          @for (lot of getAvailableLots(line.value.item); track lot.id) {
+                            <option [value]="lot.lot_tracking_number">{{ lot.lot_tracking_number }} (Disp: {{ lot.current_primary_quantity }})</option>
+                          }
+                        </select>
+                      }
+                    </td>
+                    <td class="px-4 py-2 text-center">
+                      <button type="button" (click)="removeConsumeInputLine(i)" class="text-text-muted hover:text-danger p-1 rounded"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <button type="button" (click)="addConsumeInputLine()" class="text-xs text-primary hover:underline">+ Add another raw hide</button>
+          
+          @if (isInputQtyMismatch()) {
+            <div class="mt-4 p-3 bg-warning/10 border border-warning/20 rounded-lg flex items-start gap-2">
+              <span class="text-warning text-lg leading-none mt-0.5">⚠️</span>
+              <div>
+                <p class="text-xs text-warning-foreground font-medium">Aviso de Discrepancia en Entradas</p>
+                <p class="text-[11px] text-text-muted mt-0.5">La suma a consumir (Actual: {{ getCurrentInputTotalQty() }} + Histórico: {{ getHistoricallyEnteredInputs() }}) = {{ getCurrentInputTotalQty() + getHistoricallyEnteredInputs() }} piezas, difiere de la expectativa de la receta ({{ getExpectedInputQty() }} piezas).</p>
+              </div>
+            </div>
+          }
+          
+          <div class="mt-4 flex justify-end gap-3">
+            <button type="button" (click)="toggleConsumeInputs()" class="px-4 py-2 text-sm font-medium text-text bg-surface border border-border rounded-lg hover:bg-surface-alt transition">Cancelar</button>
+            <button type="submit" [disabled]="isSubmitting || consumeInputsForm.invalid" class="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition">{{ isSubmitting ? 'Guardando...' : 'Confirmar Entradas' }}</button>
+          </div>
+        </form>
+      </div>
+    }
+
+    <!-- Produce Mode (Inline) -->
+    @if (isProduceMode()) {
+      <div class="bg-surface border border-purple-500/30 shadow-lg rounded-xl p-6 mb-6">
+        <div class="flex justify-between items-center mb-4">
+          <div>
+            <h2 class="text-lg font-semibold text-text text-purple-600">Registro de Salidas (Producción)</h2>
+            <p class="text-sm text-text-muted">Declara los productos terminados o semi-terminados resultantes. Se asignará número de lote a cada uno.</p>
+          </div>
+        </div>
+        
+        <form [formGroup]="produceForm" (ngSubmit)="submitProduce()">
+          <div class="border border-border rounded-lg mb-4 overflow-visible">
+            <table class="min-w-full divide-y divide-border">
+              <thead class="bg-surface-alt">
+                <tr>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-text-muted">Producto de Salida</th>
+                  <th class="px-4 py-3 text-right text-xs font-medium text-text-muted">Cantidad Resultante</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-text-muted">Lote a Generar</th>
+                  <th class="px-4 py-3 text-center text-xs font-medium text-text-muted">ACC</th>
+                </tr>
+              </thead>
+              <tbody formArrayName="lines" class="bg-surface divide-y divide-border">
+                @for (line of produceLines.controls; track $index; let i = $index) {
+                  <tr [formGroupName]="i">
+                    <td class="px-4 py-2 relative">
+                      <input type="text" formControlName="_item_name" (input)="onItemSearch($any($event.target).value, 'produce', i)" (focus)="onItemSearch($any($event.target).value, 'produce', i)" (blur)="clearSearch()" class="w-full px-2 py-1 border border-border rounded-md text-sm focus:ring-purple-500 focus:border-purple-500" placeholder="Buscar producto..." autocomplete="off">
+                      @if (isSearchActive('produce', i) && filteredItems().length > 0) {
+                        <div class="absolute z-50 mt-1 w-full bg-surface border border-border rounded-md shadow-lg max-h-32 overflow-y-auto">
+                          @for (item of filteredItems(); track item.id) {
+                            <button type="button" (mousedown)="selectItem(item, 'produce', i)" class="w-full text-left px-2 py-1 text-xs hover:bg-primary/10 transition">
+                              <span class="font-medium text-primary">{{ item.sku }}</span> <span class="text-text-muted">{{ item.name }}</span>
+                            </button>
+                          }
+                        </div>
+                      }
+                    </td>
+                    <td class="px-4 py-2 text-right">
+                      <input type="number" formControlName="quantity" min="0" step="1" class="w-24 px-2 py-1 border border-border rounded-md text-sm text-right focus:ring-purple-500 focus:border-purple-500">
+                    </td>
+                    <td class="px-4 py-2">
+                       @if (line.value._track_by_lot) {
+                        <input type="text" formControlName="lot_tracking_number" class="w-full px-2 py-1 border border-border rounded-md text-sm focus:ring-purple-500 focus:border-purple-500" [ngClass]="{'border-danger text-danger': !line.value.lot_tracking_number}">
+                      }
+                    </td>
+                    <td class="px-4 py-2 text-center">
+                      <button type="button" (click)="removeProduceLine(i)" class="text-text-muted hover:text-danger p-1 rounded"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <button type="button" (click)="addProduceLine()" class="text-xs text-primary hover:underline">+ Add another product</button>
+          
+          @if (isOutputQtyMismatch()) {
+            <div class="mt-4 p-3 bg-warning/10 border border-warning/20 rounded-lg flex items-start gap-2">
+              <span class="text-warning text-lg leading-none mt-0.5">⚠️</span>
+              <div>
+                <p class="text-xs text-warning-foreground font-medium">Aviso de Discrepancia en Salidas</p>
+                <p class="text-[11px] text-text-muted mt-0.5">La suma a generar (Actual: {{ getCurrentOutputTotalQty() }} + Histórica: {{ getHistoricallyEnteredOutputs() }}) = {{ getCurrentOutputTotalQty() + getHistoricallyEnteredOutputs() }}, difiere del rendimiento esperado por la receta ({{ getExpectedOutputQty() }}).</p>
+              </div>
+            </div>
+          }
+          
+          <div class="mt-4 flex justify-end gap-3">
+            <button type="button" (click)="toggleProduce()" class="px-4 py-2 text-sm font-medium text-text bg-surface border border-border rounded-lg hover:bg-surface-alt transition">Cancelar</button>
+            <button type="submit" [disabled]="isSubmitting || produceForm.invalid" class="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition">{{ isSubmitting ? 'Generando...' : 'Confirmar Salidas' }}</button>
+          </div>
+        </form>
       </div>
     }
 
@@ -81,9 +366,18 @@
           } @empty { <p class="text-xs text-text-muted italic">None</p> }
         </div>
         <div>
-          <h4 class="text-xs font-semibold text-info-foreground mb-1.5">Chemicals</h4>
+          <h4 class="text-xs font-semibold text-info-foreground mb-1.5">Chemicals & Instructions</h4>
           @for (chem of summary()!.recipe.chemicals; track chem.id) {
-            <div class="text-xs text-text-muted mb-1">{{ chem.sequence_order }}. {{ chem.item_details?.name }} <span class="text-text">{{ chem.quantity_percentage }}%</span> · {{ chem.duration_minutes }}min</div>
+            <div class="text-xs text-text-muted mb-1">
+              {{ chem.sequence_order }}. 
+              @if (chem.instruction) {
+                <span class="text-info-foreground font-medium">{{ chem.instruction }}</span>
+                @if (chem.quantity_percentage) { <span class="text-text">{{ chem.quantity_percentage }}%</span> }
+              } @else {
+                {{ chem.item_details?.name }} <span class="text-text">{{ chem.quantity_percentage }}%</span>
+              }
+               · {{ chem.duration_minutes }}min
+            </div>
           } @empty { <p class="text-xs text-text-muted italic">None</p> }
         </div>
         <div>
@@ -103,31 +397,51 @@
       } @else {
         <div class="space-y-3">
           @for (doc of summary()!.consumption_documents; track doc.id) {
-            <div class="flex items-start gap-3 bg-warning/5 border border-warning/15 rounded-lg p-3">
+            <div class="flex items-start gap-3 bg-warning/5 border border-warning/15 rounded-lg p-3" [class.opacity-50]="doc.status === 'VOIDED'">
               <span class="text-warning text-lg mt-0.5">📦</span>
               <div class="flex-1">
                 <div class="flex justify-between items-start">
-                  <span class="text-sm font-semibold text-text">{{ doc.document_number }}</span>
-                  <span class="text-xs text-text-muted">{{ doc.date | date:'short' }}</span>
+                  <div class="flex items-center gap-2">
+                    <span class="text-sm font-semibold text-text" [class.line-through]="doc.status === 'VOIDED'">{{ doc.document_number }}</span>
+                    @if (getDocumentType(doc) === 'INPUT') {
+                      <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">ENTRADAS</span>
+                    } @else if (getDocumentType(doc) === 'CHEMICAL') {
+                      <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-500/10 text-blue-600 border border-blue-500/20">QUÍMICOS</span>
+                    }
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs text-text-muted">{{ doc.date | date:'short' }}</span>
+                    @if (doc.status !== 'VOIDED' && summary()!.batch.status === 'IN_PROGRESS') {
+                      <button (click)="voidDocument(doc.id)" class="text-xs text-danger hover:underline cursor-pointer" title="Void Document">Anular</button>
+                    }
+                  </div>
                 </div>
-                <p class="text-xs text-text-muted">Consumption · {{ doc.lines?.length }} item(s)</p>
+                <p class="text-xs text-text-muted">Consumption · {{ doc.lines?.length }} item(s) @if (doc.status === 'VOIDED') { <span class="text-danger font-medium">(VOIDED)</span> }</p>
                 @for (line of doc.lines; track line.id) {
-                  <span class="text-xs text-text-muted">{{ line.item_details?.name }}: {{ line.quantity }} {{ line.item_details?.uom_details?.abbreviation }} · </span>
+                  <span class="text-xs text-text-muted" [class.line-through]="doc.status === 'VOIDED'">{{ line.item_details?.name }}: {{ line.quantity }} {{ line.item_details?.uom_details?.abbreviation }} · </span>
                 }
               </div>
             </div>
           }
           @for (doc of summary()!.output_documents; track doc.id) {
-            <div class="flex items-start gap-3 bg-success/5 border border-success/15 rounded-lg p-3">
+            <div class="flex items-start gap-3 bg-success/5 border border-success/15 rounded-lg p-3" [class.opacity-50]="doc.status === 'VOIDED'">
               <span class="text-success text-lg mt-0.5">✅</span>
               <div class="flex-1">
                 <div class="flex justify-between items-start">
-                  <span class="text-sm font-semibold text-text">{{ doc.document_number }}</span>
-                  <span class="text-xs text-text-muted">{{ doc.date | date:'short' }}</span>
+                  <div class="flex items-center gap-2">
+                    <span class="text-sm font-semibold text-text" [class.line-through]="doc.status === 'VOIDED'">{{ doc.document_number }}</span>
+                    <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-purple-500/10 text-purple-600 border border-purple-500/20">SALIDAS</span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs text-text-muted">{{ doc.date | date:'short' }}</span>
+                    @if (doc.status !== 'VOIDED' && summary()!.batch.status === 'IN_PROGRESS') {
+                      <button (click)="voidDocument(doc.id)" class="text-xs text-danger hover:underline cursor-pointer" title="Void Document">Anular</button>
+                    }
+                  </div>
                 </div>
-                <p class="text-xs text-text-muted">Output · {{ doc.lines?.length }} item(s)</p>
+                <p class="text-xs text-text-muted">Output · {{ doc.lines?.length }} item(s) @if (doc.status === 'VOIDED') { <span class="text-danger font-medium">(VOIDED)</span> }</p>
                 @for (line of doc.lines; track line.id) {
-                  <span class="text-xs text-text-muted">{{ line.item_details?.name }}: {{ line.quantity }} {{ line.item_details?.uom_details?.abbreviation }} · </span>
+                  <span class="text-xs text-text-muted" [class.line-through]="doc.status === 'VOIDED'">{{ line.item_details?.name }}: {{ line.quantity }} {{ line.item_details?.uom_details?.abbreviation }} · </span>
                 }
               </div>
             </div>
@@ -137,73 +451,18 @@
     </div>
   </div>
 
-  <!-- Consume Modal -->
-  <app-modal title="Record Consumption" [isOpen]="isConsumeOpen()" (close)="isConsumeOpen.set(false)" [maxWidthClass]="'max-w-3xl'">
-    <form [formGroup]="consumeForm" (ngSubmit)="submitConsume()" class="space-y-4">
-      <p class="text-xs text-text-muted">Materials consumed during this batch. Lines are pre-populated from the recipe.</p>
-      <div formArrayName="lines" class="space-y-2">
-        @for (line of consumeLines.controls; track $index; let i = $index) {
-          <div [formGroupName]="i" class="flex items-center gap-2 bg-surface-alt rounded-lg p-2">
-            <div class="flex-1 relative">
-              <input type="text" formControlName="_item_name" (input)="onItemSearch($any($event.target).value, 'consume', i)" (focus)="onItemSearch($any($event.target).value, 'consume', i)" (blur)="clearSearch()" class="w-full px-3 py-1.5 border border-border rounded-lg text-sm" placeholder="Search item..." autocomplete="off">
-              @if (isSearchActive('consume', i) && filteredItems().length > 0) {
-                <div class="absolute z-50 mt-1 w-full bg-surface border border-border rounded-lg shadow-lg max-h-36 overflow-y-auto">
-                  @for (item of filteredItems(); track item.id) {
-                    <button type="button" (mousedown)="selectItem(item, 'consume', i)" class="w-full text-left px-3 py-1.5 text-sm hover:bg-primary/10 cursor-pointer transition">
-                      <span class="font-medium text-primary">{{ item.sku }}</span> <span class="text-text-muted">{{ item.name }}</span>
-                    </button>
-                  }
-                </div>
-              }
-            </div>
-            <input type="number" formControlName="quantity" min="0.01" step="0.01" class="w-24 px-2 py-1.5 border border-border rounded-lg text-sm text-right" placeholder="Qty">
-            @if (line.value._track_by_lot) {
-              <input type="text" formControlName="lot_tracking_number" class="w-32 px-2 py-1.5 border border-border rounded-lg text-sm" placeholder="Lot #">
-            }
-            <button type="button" (click)="removeConsumeLine(i)" class="text-text-muted hover:text-danger cursor-pointer p-1"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
-          </div>
-        }
-      </div>
-      <button type="button" (click)="addConsumeLine()" class="text-xs text-primary cursor-pointer hover:underline">+ Add another line</button>
-      <div modal-footer class="px-6 py-4 bg-surface-alt border-t border-border flex justify-end gap-3 rounded-b-xl">
-        <button type="button" (click)="isConsumeOpen.set(false)" class="px-4 py-2 text-sm font-medium text-text bg-surface border border-border rounded-lg cursor-pointer transition">Cancel</button>
-        <button type="submit" [disabled]="isSubmitting" class="px-4 py-2 text-sm font-medium text-white bg-warning rounded-lg hover:bg-warning/90 cursor-pointer disabled:opacity-50 transition">{{ isSubmitting ? 'Recording...' : 'Record Consumption' }}</button>
-      </div>
-    </form>
-  </app-modal>
 
-  <!-- Produce Modal -->
-  <app-modal title="Record Output" [isOpen]="isProduceOpen()" (close)="isProduceOpen.set(false)" [maxWidthClass]="'max-w-3xl'">
-    <form [formGroup]="produceForm" (ngSubmit)="submitProduce()" class="space-y-4">
-      <p class="text-xs text-text-muted">Products output from this batch. Lines are pre-populated from the recipe.</p>
-      <div formArrayName="lines" class="space-y-2">
-        @for (line of produceLines.controls; track $index; let i = $index) {
-          <div [formGroupName]="i" class="flex items-center gap-2 bg-surface-alt rounded-lg p-2">
-            <div class="flex-1 relative">
-              <input type="text" formControlName="_item_name" (input)="onItemSearch($any($event.target).value, 'produce', i)" (focus)="onItemSearch($any($event.target).value, 'produce', i)" (blur)="clearSearch()" class="w-full px-3 py-1.5 border border-border rounded-lg text-sm" placeholder="Search item..." autocomplete="off">
-              @if (isSearchActive('produce', i) && filteredItems().length > 0) {
-                <div class="absolute z-50 mt-1 w-full bg-surface border border-border rounded-lg shadow-lg max-h-36 overflow-y-auto">
-                  @for (item of filteredItems(); track item.id) {
-                    <button type="button" (mousedown)="selectItem(item, 'produce', i)" class="w-full text-left px-3 py-1.5 text-sm hover:bg-primary/10 cursor-pointer transition">
-                      <span class="font-medium text-primary">{{ item.sku }}</span> <span class="text-text-muted">{{ item.name }}</span>
-                    </button>
-                  }
-                </div>
-              }
-            </div>
-            <input type="number" formControlName="quantity" min="0.01" step="0.01" class="w-24 px-2 py-1.5 border border-border rounded-lg text-sm text-right" placeholder="Qty">
-            @if (line.value._track_by_lot) {
-              <input type="text" formControlName="lot_tracking_number" class="w-32 px-2 py-1.5 border border-border rounded-lg text-sm" placeholder="Lot #">
-            }
-            <button type="button" (click)="removeProduceLine(i)" class="text-text-muted hover:text-danger cursor-pointer p-1"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
-          </div>
+
+  <!-- Action / Confirmation Modal -->
+  <app-modal [title]="actionModal().title" [isOpen]="actionModal().isOpen" (close)="closeActionModal()" [maxWidthClass]="'max-w-md'">
+    <div class="space-y-4">
+      <div class="text-sm text-text" [innerHTML]="actionModal().message"></div>
+      
+      <div modal-footer class="px-6 py-4 bg-surface-alt border-t border-border flex justify-end gap-3 rounded-b-xl flex-wrap">
+        @for (action of actionModal().actions; track action.label) {
+          <button type="button" (click)="action.handler()" [class]="action.cssClass">{{ action.label }}</button>
         }
       </div>
-      <button type="button" (click)="addProduceLine()" class="text-xs text-primary cursor-pointer hover:underline">+ Add another line</button>
-      <div modal-footer class="px-6 py-4 bg-surface-alt border-t border-border flex justify-end gap-3 rounded-b-xl">
-        <button type="button" (click)="isProduceOpen.set(false)" class="px-4 py-2 text-sm font-medium text-text bg-surface border border-border rounded-lg cursor-pointer transition">Cancel</button>
-        <button type="submit" [disabled]="isSubmitting" class="px-4 py-2 text-sm font-medium text-white bg-success rounded-lg hover:bg-success/90 cursor-pointer disabled:opacity-50 transition">{{ isSubmitting ? 'Recording...' : 'Record Output' }}</button>
-      </div>
-    </form>
+    </div>
   </app-modal>
 }

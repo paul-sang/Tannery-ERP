@@ -57,9 +57,12 @@
       <div class="flex justify-between items-center mb-2">
         <h3 class="text-sm font-semibold text-text flex items-center gap-1">
           <svg class="w-4 h-4 text-info-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
-          Chemicals Formula
+          Chemicals Formula & Instructions
         </h3>
-        <button type="button" (click)="addChemical()" class="text-xs bg-info/15 text-info-foreground px-2.5 py-1 rounded-lg hover:bg-info/25 transition cursor-pointer">+ Add Chemical</button>
+        <div class="flex gap-2">
+          <button type="button" (click)="addChemical(true)" class="text-xs bg-surface-alt text-text-muted px-2.5 py-1 rounded-lg hover:bg-surface transition cursor-pointer border border-border">+ Add Instruction</button>
+          <button type="button" (click)="addChemical(false)" class="text-xs bg-info/15 text-info-foreground px-2.5 py-1 rounded-lg hover:bg-info/25 transition cursor-pointer">+ Add Chemical</button>
+        </div>
       </div>
       <div formArrayName="chemicals" class="space-y-2">
         @for (chem of chemicals.controls; track $index; let i = $index) {
@@ -67,16 +70,21 @@
             <div class="col-span-1">
               <input type="number" formControlName="sequence_order" class="w-full px-2 py-1.5 border border-border rounded-lg text-sm text-center" min="1">
             </div>
+            
             <div class="col-span-4 relative">
-              <input type="text" formControlName="_item_name" (input)="onItemSearch($any($event.target).value, 'chemical', i)" (focus)="onItemSearch($any($event.target).value, 'chemical', i)" (blur)="clearSearch()" class="w-full px-3 py-1.5 border border-border rounded-lg text-sm" placeholder="Search chemical..." autocomplete="off">
-              @if (isSearchActive('chemical', i) && filteredItems().length > 0) {
-                <div class="absolute z-50 mt-1 w-full bg-surface border border-border rounded-lg shadow-lg max-h-36 overflow-y-auto">
-                  @for (item of filteredItems(); track item.id) {
-                    <button type="button" (mousedown)="selectItem(item, 'chemical', i)" class="w-full text-left px-3 py-1.5 text-sm hover:bg-primary/10 cursor-pointer transition">
-                      <span class="font-medium text-primary">{{ item.sku }}</span> <span class="text-text-muted">{{ item.name }}</span>
-                    </button>
-                  }
-                </div>
+              @if (chem.value._is_instruction) {
+                <input type="text" formControlName="instruction" class="w-full px-3 py-1.5 border border-border rounded-lg text-sm bg-surface" placeholder="e.g. ESCURRIR, AGUA, LAVADO...">
+              } @else {
+                <input type="text" formControlName="_item_name" (input)="onItemSearch($any($event.target).value, 'chemical', i)" (focus)="onItemSearch($any($event.target).value, 'chemical', i)" (blur)="clearSearch()" class="w-full px-3 py-1.5 border border-border rounded-lg text-sm" placeholder="Search chemical..." autocomplete="off">
+                @if (isSearchActive('chemical', i) && filteredItems().length > 0) {
+                  <div class="absolute z-50 mt-1 w-full bg-surface border border-border rounded-lg shadow-lg max-h-36 overflow-y-auto">
+                    @for (item of filteredItems(); track item.id) {
+                      <button type="button" (mousedown)="selectItem(item, 'chemical', i)" class="w-full text-left px-3 py-1.5 text-sm hover:bg-primary/10 cursor-pointer transition">
+                        <span class="font-medium text-primary">{{ item.sku }}</span> <span class="text-text-muted">{{ item.name }}</span>
+                      </button>
+                    }
+                  </div>
+                }
               }
             </div>
             <input type="number" formControlName="quantity_percentage" class="col-span-2 px-2 py-1.5 border border-border rounded-lg text-sm text-right" placeholder="%" step="0.01">

@@ -4,6 +4,7 @@ from .models import (
     ProductionBatch
 )
 from apps.inventory.serializers import ItemSerializer
+from apps.inventory.models import Item
 
 
 class ProductionStageSerializer(serializers.ModelSerializer):
@@ -31,7 +32,7 @@ class ProcessChemicalSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProcessChemical
         fields = [
-            'id', 'process', 'item', 'item_details', 'quantity_percentage',
+            'id', 'process', 'item', 'item_details', 'instruction', 'quantity_percentage',
             'sequence_order', 'ph_target', 'temperature_celsius', 'duration_minutes'
         ]
 
@@ -49,9 +50,11 @@ class ProcessOutputWriteSerializer(serializers.ModelSerializer):
         fields = ['item', 'expected_yield_percentage']
 
 class ProcessChemicalWriteSerializer(serializers.ModelSerializer):
+    item = serializers.PrimaryKeyRelatedField(queryset=Item.objects.all(), allow_null=True, required=False)
+
     class Meta:
         model = ProcessChemical
-        fields = ['item', 'quantity_percentage', 'sequence_order', 'ph_target', 'temperature_celsius', 'duration_minutes']
+        fields = ['item', 'instruction', 'quantity_percentage', 'sequence_order', 'ph_target', 'temperature_celsius', 'duration_minutes']
 
 
 # --- Process serializers ---
@@ -137,17 +140,31 @@ class ProductionBatchReadSerializer(serializers.ModelSerializer):
         model = ProductionBatch
         fields = [
             'id', 'batch_number', 'process', 'process_name', 'stage_name',
+            'base_weight', 'quantity_hides',
             'start_date', 'end_date', 'status', 'manager', 'manager_name', 'notes'
         ]
 
 
+class InitialLotSerializer(serializers.Serializer):
+    lot_id = serializers.IntegerField()
+    item_id = serializers.IntegerField()
+    quantity = serializers.DecimalField(max_digits=12, decimal_places=2)
+
+
 class ProductionBatchWriteSerializer(serializers.ModelSerializer):
+    initial_lots = InitialLotSerializer(many=True, write_only=True, required=False)
+
     class Meta:
         model = ProductionBatch
-        fields = ['process', 'status', 'notes']
+        fields = ['id', 'batch_number', 'process', 'status', 'notes', 'base_weight', 'quantity_hides', 'initial_lots']
+        read_only_fields = ['id', 'batch_number']
 
     def create(self, validated_data):
         from django.utils import timezone
+        from django.db import transaction
+        from apps.inventory.models import InventoryDocument, InventoryDocumentLine, StockLot, Item
+
+        initial_lots = validated_data.pop('initial_lots', [])
 
         # Auto-generate batch number
         count = ProductionBatch.objects.count() + 1
@@ -158,7 +175,36 @@ class ProductionBatchWriteSerializer(serializers.ModelSerializer):
 
         # Assign current user as manager
         request = self.context.get('request')
+        user = None
         if request and request.user:
             validated_data['manager'] = request.user
+            user = request.user
 
-        return super().create(validated_data)
+        with transaction.atomic():
+            batch = super().create(validated_data)
+            
+            if initial_lots and user:
+                # Create PCN document for initial lots (hides)
+                # Ensure unique doc number
+                doc_count = InventoryDocument.objects.count() + 1
+                doc_number = f"PCN-{timestamp}-{doc_count:04d}"
+                doc = InventoryDocument.objects.create(
+                    document_number=doc_number,
+                    document_type=InventoryDocument.DocumentType.PRODUCTION_CONSUMPTION,
+                    user=user,
+                    production_batch=batch,
+                    notes=f"Initial raw material consumption for Batch {batch_number}"
+                )
+                
+                for lot_data in initial_lots:
+                    item = Item.objects.get(id=lot_data['item_id'])
+                    stock_lot = StockLot.objects.get(id=lot_data['lot_id'])
+                    InventoryDocumentLine.objects.create(
+                        document=doc,
+                        item=item,
+                        stock_lot=stock_lot,
+                        movement_type=InventoryDocumentLine.MovementType.OUT,
+                        quantity=lot_data['quantity']
+                    )
+
+        return batch

@@ -47,8 +47,6 @@
     (onRowClick)="onRowClick($event)" (onSort)="onSort($event)">
   </app-data-table>
 
-  <app-batch-form [isOpen]="isFormOpen()" (closeForm)="closeForm()" (batchSaved)="onBatchSaved()"></app-batch-form>
-
   <!-- Advanced Filters Offcanvas -->
   <app-offcanvas 
     [isOpen]="isFilterOpen()" 

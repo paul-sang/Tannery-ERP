@@ -92,9 +92,11 @@ export class ProcessFormComponent implements OnInit, OnChanges {
     this.chemicals.clear();
     proc.chemicals?.forEach(chem => {
       this.chemicals.push(this.fb.group({
-        item: [chem.item, Validators.required],
+        _is_instruction: [!!chem.instruction],
+        item: [chem.item],
         _item_name: [chem.item_details?.name || ''],
-        quantity_percentage: [chem.quantity_percentage, Validators.required],
+        instruction: [chem.instruction || ''],
+        quantity_percentage: [chem.quantity_percentage],
         sequence_order: [chem.sequence_order, Validators.required],
         ph_target: [chem.ph_target],
         temperature_celsius: [chem.temperature_celsius],
@@ -127,11 +129,13 @@ export class ProcessFormComponent implements OnInit, OnChanges {
     }));
   }
 
-  addChemical() {
+  addChemical(isInstruction = false) {
     this.chemicals.push(this.fb.group({
-      item: [null, Validators.required],
+      _is_instruction: [isInstruction],
+      item: [null],
       _item_name: [''],
-      quantity_percentage: [0, Validators.required],
+      instruction: [''],
+      quantity_percentage: [null],
       sequence_order: [this.chemicals.length + 1, Validators.required],
       ph_target: [null],
       temperature_celsius: [null],
@@ -197,7 +201,8 @@ export class ProcessFormComponent implements OnInit, OnChanges {
       expected_inputs: raw.expected_inputs.map((r: any) => ({ item: r.item, expected_percentage: r.expected_percentage })),
       expected_outputs: raw.expected_outputs.map((r: any) => ({ item: r.item, expected_yield_percentage: r.expected_yield_percentage })),
       chemicals: raw.chemicals.map((r: any) => ({
-        item: r.item,
+        item: r._is_instruction ? null : r.item,
+        instruction: r._is_instruction ? r.instruction : null,
         quantity_percentage: r.quantity_percentage,
         sequence_order: r.sequence_order,
         ph_target: r.ph_target,

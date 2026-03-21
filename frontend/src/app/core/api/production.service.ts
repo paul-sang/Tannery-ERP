@@ -29,9 +29,10 @@ export interface ProcessOutput {
 export interface ProcessChemical {
   id?: number;
   process?: number;
-  item: number;
+  item?: number | null;
   item_details?: Item;
-  quantity_percentage: number;
+  instruction?: string | null;
+  quantity_percentage?: number | null;
   sequence_order: number;
   ph_target: number | null;
   temperature_celsius: number | null;
@@ -56,6 +57,8 @@ export interface ProductionBatch {
   process: number;
   process_name?: string;
   stage_name?: string;
+  base_weight?: string;
+  quantity_hides?: number;
   start_date: string;
   end_date: string | null;
   status: string;
@@ -151,7 +154,7 @@ export class ProductionService {
     return this.http.get<BatchSummary>(`${this.apiUrl}/batches/${batchId}/summary/`);
   }
 
-  updateBatchStatus(batchId: number, status: string): Observable<ProductionBatch> {
-    return this.http.patch<ProductionBatch>(`${this.apiUrl}/batches/${batchId}/update_status/`, { status });
+  updateBatchStatus(batchId: number, status: string, revert_inventory: boolean = false): Observable<ProductionBatch> {
+    return this.http.patch<ProductionBatch>(`${this.apiUrl}/batches/${batchId}/update_status/`, { status, revert_inventory });
   }
 }

@@ -117,8 +117,8 @@ class ProductionBatchViewSet(viewsets.ModelViewSet):
             'recipe': recipe_data,
             'consumption_documents': InventoryDocumentReadSerializer(consumption_docs, many=True).data,
             'output_documents': InventoryDocumentReadSerializer(output_docs, many=True).data,
-            'total_consumption_docs': consumption_docs.count(),
-            'total_output_docs': output_docs.count()
+            'total_consumption_docs': consumption_docs.filter(status=InventoryDocument.Status.ACTIVE).count(),
+            'total_output_docs': output_docs.filter(status=InventoryDocument.Status.ACTIVE).count()
         })
 
     @action(detail=True, methods=['patch'])
@@ -126,9 +126,35 @@ class ProductionBatchViewSet(viewsets.ModelViewSet):
         """Update batch status with optional end_date on completion."""
         batch = self.get_object()
         new_status = request.data.get('status')
+        revert_inventory = request.data.get('revert_inventory', False)
 
         if new_status not in dict(ProductionBatch.Status.choices):
             return Response({'detail': 'Invalid status.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Handle Reversal if CANCELLED
+        if new_status == 'CANCELLED' and revert_inventory:
+            from apps.inventory.models import InventoryDocument, StockMovement
+            from django.db import transaction
+            
+            with transaction.atomic():
+                docs = InventoryDocument.objects.filter(production_batch=batch, status=InventoryDocument.Status.ACTIVE)
+                for doc in docs:
+                    # Create reversing movements for each movement associated with this doc
+                    movements = StockMovement.objects.filter(document_line__document=doc)
+                    for sm in movements:
+                        rev_type = StockMovement.MovementType.IN if sm.movement_type == StockMovement.MovementType.OUT else StockMovement.MovementType.OUT
+                        StockMovement.objects.create(
+                            item=sm.item,
+                            stock_lot=sm.stock_lot,
+                            document_line=sm.document_line,
+                            movement_type=rev_type,
+                            quantity=sm.quantity,
+                            secondary_quantity=sm.secondary_quantity,
+                            reference_document=f"REV-{sm.reference_document}",
+                            user=request.user
+                        )
+                    doc.status = InventoryDocument.Status.VOIDED
+                    doc.save(update_fields=['status'])
 
         batch.status = new_status
         if new_status in ['COMPLETED', 'CANCELLED']:

@@ -1,0 +1,130 @@
+<div class="h-full flex flex-col bg-background">
+  <!-- Header -->
+  <header class="px-8 py-6 bg-surface border-b border-border flex items-center justify-between shrink-0">
+    <div class="flex items-center gap-4">
+      <button (click)="goBack()" class="p-2 text-text-muted hover:text-text hover:bg-surface-alt rounded-lg transition cursor-pointer">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+      <div>
+        <h1 class="text-2xl font-semibold text-text">Start Production Process</h1>
+        <p class="text-sm text-text-muted">Initialize a new batch and allocate raw materials.</p>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-1 overflow-y-auto p-8">
+    <div class="max-w-3xl mx-auto">
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" class="space-y-8">
+        
+        <!-- Recipe Selection -->
+        <div class="bg-surface rounded-xl border border-border overflow-hidden">
+          <div class="px-6 py-4 border-b border-border bg-surface-alt/50">
+            <h2 class="text-base font-semibold text-text">1. Select Process (Recipe)</h2>
+          </div>
+          <div class="p-6">
+            <label class="block text-sm font-medium text-text mb-2">Process / Formula <span class="text-danger">*</span></label>
+            <select formControlName="process" class="w-full px-4 py-2.5 border border-border rounded-lg shadow-sm focus:ring-2 focus:ring-primary focus:border-primary text-sm bg-background">
+              <option [ngValue]="null" disabled>Select a process...</option>
+              @for (p of processes(); track p.id) {
+                <option [ngValue]="p.id">{{ p.name }} ({{ p.stage_name }})</option>
+              }
+            </select>
+          </div>
+        </div>
+
+        <!-- Parameters -->
+        <div class="bg-surface rounded-xl border border-border overflow-hidden">
+          <div class="px-6 py-4 border-b border-border bg-surface-alt/50">
+            <h2 class="text-base font-semibold text-text">2. Production Parameters</h2>
+          </div>
+          <div class="p-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div>
+              <label class="block text-sm font-medium text-text mb-2">Quantity (Hides/Skins) <span class="text-danger">*</span></label>
+              <input type="number" formControlName="quantity_hides" class="w-full px-4 py-2.5 border border-border rounded-lg shadow-sm focus:ring-2 focus:ring-primary focus:border-primary text-sm bg-background" placeholder="e.g. 300">
+            </div>
+            @if (showBaseWeight()) {
+              <div class="animate-fade-in">
+                <label class="block text-sm font-medium text-text mb-2">Base Weight (kg) <span class="text-danger">*</span></label>
+                <input type="number" formControlName="base_weight" step="0.01" class="w-full px-4 py-2.5 border border-border rounded-lg shadow-sm focus:ring-2 focus:ring-primary focus:border-primary text-sm bg-background" placeholder="e.g. 1500.00">
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Raw Materials (Lots) -->
+        <div class="bg-surface rounded-xl border border-border overflow-hidden">
+          <div class="px-6 py-4 border-b border-border bg-surface-alt/50 flex justify-between items-center">
+            <h2 class="text-base font-semibold text-text">3. Allocate Raw Materials (Hides)</h2>
+            <button type="button" (click)="addLot()" class="text-sm font-medium text-primary hover:text-primary/80 transition cursor-pointer flex items-center gap-1">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+              Add Lot
+            </button>
+          </div>
+          <div class="p-6" formArrayName="initial_lots">
+            @if (initialLots.length === 0) {
+              <p class="text-sm text-text-muted text-center py-4">No raw materials allocated yet. Click "Add Lot" to select hides for this batch.</p>
+            } @else {
+              @if (totalLotQuantity !== expectedHides) {
+                <div class="mb-4 p-3 bg-danger/10 border border-danger/20 rounded-lg text-sm text-danger font-medium flex items-start gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mt-0.5 shrink-0"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                  <span>La cantidad de pieles a consumir ({{ totalLotQuantity }}) no coincide con la cantidad declarada en los parámetros de producción ({{ expectedHides }}).</span>
+                </div>
+              }
+            }
+
+            <div class="space-y-4">
+              @for (lotGroup of initialLots.controls; track $index; let i = $index) {
+                <div [formGroupName]="i" class="flex gap-4 items-start p-4 border border-border rounded-lg bg-surface-alt/20 relative">
+                  <div class="flex-1">
+                    <label class="block text-xs font-medium text-text mb-1">Select Lot <span class="text-danger">*</span></label>
+                    <select formControlName="lot_id" (change)="onLotChange(i)" class="w-full px-3 py-2 border border-border rounded-md shadow-sm focus:ring-2 focus:ring-primary focus:border-primary text-sm bg-background">
+                      <option [ngValue]="null" disabled>Select inventory lot...</option>
+                      @for (lot of availableLots(); track lot.id) {
+                        <option [ngValue]="lot.id">{{ lot.lot_tracking_number }} ({{ lot.item_details.name }}) - Available: {{ lot.current_primary_quantity }} {{ lot.item_details.uom_details.abbreviation }}</option>
+                      }
+                    </select>
+                  </div>
+                  <div class="w-40">
+                    <label class="block text-xs font-medium text-text mb-1">Quantity to Consume <span class="text-danger">*</span></label>
+                    <div class="relative">
+                      <input type="number" formControlName="quantity" step="0.01" class="w-full px-3 py-2 border border-border rounded-md shadow-sm focus:ring-2 focus:ring-primary focus:border-primary text-sm bg-background" [class.border-danger]="lotGroup.get('quantity')?.invalid && lotGroup.get('quantity')?.touched">
+                      @if (lotGroup.get('quantity')?.invalid && lotGroup.get('quantity')?.touched) {
+                        <span class="absolute top-full left-0 text-[10px] text-danger mt-0.5">Stock insuficiente o cantidad en 0</span>
+                      }
+                    </div>
+                  </div>
+                  <button type="button" (click)="removeLot(i)" class="mt-6 p-2 text-text-muted hover:text-danger hover:bg-danger/10 rounded-md transition cursor-pointer" title="Remove">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                  </button>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- Notes & Actions -->
+        <div class="space-y-6">
+          <div>
+            <label class="block text-sm font-medium text-text mb-2">Additional Notes</label>
+            <textarea formControlName="notes" rows="3" class="w-full px-4 py-3 border border-border rounded-lg shadow-sm focus:ring-2 focus:ring-primary focus:border-primary text-sm bg-surface" placeholder="Optional notes for this batch..."></textarea>
+          </div>
+
+          <div class="flex justify-end gap-3 pt-4 border-t border-border">
+            <button type="button" (click)="goBack()" class="px-5 py-2.5 text-sm font-medium text-text bg-surface border border-border rounded-lg hover:bg-surface-alt cursor-pointer transition">Cancel</button>
+            <button type="submit" [disabled]="isSubmitting() || form.invalid" class="px-5 py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary/90 cursor-pointer disabled:opacity-50 transition flex items-center gap-2">
+              @if (isSubmitting()) {
+                <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                Creating...
+              } @else {
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                Generate Process
+              }
+            </button>
+          </div>
+        </div>
+
+      </form>
+    </div>
+  </main>
+</div>

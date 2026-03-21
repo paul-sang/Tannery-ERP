@@ -42,7 +42,7 @@ export class AuthService {
     if (!this.hasToken()) return;
     this.http.get<UserProfile>(`${environment.apiUrl}/users/me/`).subscribe({
       next: (user) => this.currentUser.set(user),
-      error: () => {}
+      error: () => { }
     });
   }
 
