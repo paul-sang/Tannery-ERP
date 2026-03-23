@@ -207,14 +207,14 @@ export class BatchDetailComponent implements OnInit {
     const produceLines: any[] = [];
     if (missingOutputs) {
       let outCounter = 1;
+      const batchQty = Number(sum?.batch?.quantity_hides || 0);
       sum?.recipe.expected_outputs.forEach((out: any) => {
         if (out.item && out.expected_yield_percentage) {
-          const isPieces = out.item_details?.category_details?.name === 'FINISHED_LEATHER' || out.item_details?.category_details?.name === 'RAW_HIDE';
-          const maxQty = isPieces ? Math.floor((Number(out.expected_yield_percentage) / 100) * Number(sum.batch.quantity_hides)) : Number(((Number(out.expected_yield_percentage) / 100) * baseWeight).toFixed(2));
+          const maxQty = Math.floor((Number(out.expected_yield_percentage) / 100) * batchQty);
           produceLines.push({
             item: out.item,
             movement_type: 'IN',
-            quantity: maxQty > 0 ? maxQty : 1,
+            quantity: maxQty > 0 ? maxQty : 0,
             lot_tracking_number: out.item_details?.track_by_lot ? `${sum.batch.batch_number}-OUT-${String(outCounter++).padStart(2, '0')}` : '',
             notes: 'Auto-generado teóricamente (Salida)'
           });
@@ -393,6 +393,104 @@ export class BatchDetailComponent implements OnInit {
     });
   }
 
+  // --- Helpers: detect existing docs ---
+  hasExistingInputDocs(): boolean {
+    const sum = this.summary();
+    return sum?.consumption_documents?.some((d: any) =>
+      d.status !== 'VOIDED' && d.lines?.some((l: any) => l.item_details?.category_details?.name === 'RAW_HIDE')
+    ) || false;
+  }
+
+  hasExistingChemicalDocs(): boolean {
+    const sum = this.summary();
+    return sum?.consumption_documents?.some((d: any) =>
+      d.status !== 'VOIDED' && d.lines?.some((l: any) => l.item_details?.category_details?.name === 'CHEMICAL')
+    ) || false;
+  }
+
+  hasExistingOutputDocs(): boolean {
+    const sum = this.summary();
+    return sum?.output_documents?.some((d: any) => d.status !== 'VOIDED') || false;
+  }
+
+  // --- Recipe vs Actual Summary ---
+  recipeSummary() {
+    const sum = this.summary();
+    if (!sum) return { inputs: [], chemicals: [], outputs: [] };
+
+    const batchQty = Number(sum.batch.quantity_hides) || 0;
+    const baseWeight = Number(sum.batch.base_weight) || 0;
+
+    // Collect actual consumed quantities by item_id
+    const consumedMap: Record<number, number> = {};
+    sum.consumption_documents?.filter((d: any) => d.status !== 'VOIDED').forEach((doc: any) => {
+      doc.lines?.forEach((l: any) => {
+        const id = l.item_details?.id || l.item;
+        consumedMap[id] = (consumedMap[id] || 0) + Number(l.quantity);
+      });
+    });
+
+    // Collect actual produced quantities by item_id
+    const producedMap: Record<number, number> = {};
+    sum.output_documents?.filter((d: any) => d.status !== 'VOIDED').forEach((doc: any) => {
+      doc.lines?.forEach((l: any) => {
+        const id = l.item_details?.id || l.item;
+        producedMap[id] = (producedMap[id] || 0) + Number(l.quantity);
+      });
+    });
+
+    // Inputs
+    const inputs = (sum.recipe.expected_inputs || []).map((inp: any) => {
+      const expected = Math.floor((Number(inp.expected_percentage) / 100) * batchQty);
+      const actual = consumedMap[inp.item] || 0;
+      return { name: inp.item_details?.name || 'Unknown', expected, actual, diff: actual - expected };
+    });
+
+    // Chemicals — aggregate by item ID since same chemical can appear in multiple recipe steps
+    const chemMap: Record<number, { name: string; expected: number }> = {};
+    (sum.recipe.chemicals || []).filter((c: any) => !!c.item).forEach((chem: any) => {
+      const stepExpected = Number(((Number(chem.quantity_percentage) / 100) * baseWeight).toFixed(2));
+      if (chemMap[chem.item]) {
+        chemMap[chem.item].expected = Number((chemMap[chem.item].expected + stepExpected).toFixed(2));
+      } else {
+        chemMap[chem.item] = { name: chem.item_details?.name || 'Unknown', expected: stepExpected };
+      }
+    });
+    const chemicals = Object.entries(chemMap).map(([itemId, info]) => {
+      const actual = consumedMap[Number(itemId)] || 0;
+      return { name: info.name, expected: info.expected, actual: Number(actual.toFixed(2)), diff: Number((actual - info.expected).toFixed(2)) };
+    });
+
+    // Outputs
+    const outputs = (sum.recipe.expected_outputs || []).map((out: any) => {
+      const expected = Math.floor((Number(out.expected_yield_percentage) / 100) * batchQty);
+      const actual = producedMap[out.item] || 0;
+      return { name: out.item_details?.name || 'Unknown', expected, actual, diff: actual - expected };
+    });
+
+    // Extra items (consumed but not in recipe)
+    const recipeItemIds = new Set([
+      ...(sum.recipe.expected_inputs || []).map((i: any) => i.item),
+      ...(sum.recipe.chemicals || []).filter((c: any) => !!c.item).map((c: any) => c.item),
+    ]);
+    const extraChemicals: any[] = [];
+    Object.keys(consumedMap).forEach(idStr => {
+      const id = Number(idStr);
+      if (!recipeItemIds.has(id)) {
+        // Find item name from docs
+        let name = 'Extra #' + id;
+        sum.consumption_documents?.forEach((doc: any) => {
+          doc.lines?.forEach((l: any) => {
+            if ((l.item_details?.id || l.item) === id && l.item_details?.name) name = l.item_details.name;
+          });
+        });
+        extraChemicals.push({ name, expected: 0, actual: consumedMap[id], diff: consumedMap[id] });
+      }
+    });
+
+    return { inputs, chemicals: [...chemicals, ...extraChemicals], outputs };
+  }
+
   // --- Consume Grid Mode ---
   toggleConsumeMode() {
     if (this.isConsumeMode()) {
@@ -417,12 +515,23 @@ export class BatchDetailComponent implements OnInit {
     const recipe = this.summary()?.recipe;
     const baseWeight = Number(this.summary()?.batch.base_weight || 0);
 
+    // If chemicals have already been recorded, open blank form
+    if (this.hasExistingChemicalDocs()) {
+      this.addExtraConsumeLine();
+      this.isConsumeMode.set(true);
+      return;
+    }
+
     const offset = 0;
+    const chemItemIds: number[] = [];
     recipe?.chemicals?.forEach(chem => {
       const isInstruction = !chem.item;
       let qty = 0;
       if (!isInstruction && baseWeight && chem.quantity_percentage) {
         qty = (Number(chem.quantity_percentage) / 100) * baseWeight;
+      }
+      if (!isInstruction && chem.item_details?.track_by_lot && chem.item) {
+        chemItemIds.push(chem.item);
       }
       
       this.consumeLines.push(this.createConsumeLine({
@@ -437,6 +546,19 @@ export class BatchDetailComponent implements OnInit {
         categoryName: chem.item_details?.category_details?.name
       }));
     });
+
+    // Load available lots for lot-tracked chemicals
+    const uniqueIds = [...new Set(chemItemIds)];
+    if (uniqueIds.length > 0) {
+      const reqs = uniqueIds.map(id => this.inventoryService.getStockLots(1, 100, id, 'AVAILABLE', 'created_at').pipe(map(res => ({id, lots: res.results}))));
+      forkJoin(reqs).subscribe({
+        next: (results) => {
+          const newMap = { ...this.availableLotsMap() };
+          results.forEach(r => newMap[r.id!] = r.lots);
+          this.availableLotsMap.set(newMap);
+        }
+      });
+    }
     
     this.isConsumeMode.set(true);
   }
@@ -476,20 +598,26 @@ export class BatchDetailComponent implements OnInit {
   // --- Produce modal ---
   openProduce() {
     this.produceLines.clear();
-    const recipe = this.summary()?.recipe;
-    const batchNo = this.summary()?.batch.batch_number || 'BATCH';
-    recipe?.expected_outputs?.forEach((out, idx) => {
-      const baseWeight = Number(this.summary()?.batch.base_weight || 0);
-      let qty = 0;
-      if (baseWeight && out.expected_yield_percentage) {
-        qty = (Number(out.expected_yield_percentage) / 100) * baseWeight;
-      }
-      const lineGroup = this.createLine(out.item, out.item_details?.name || '', out.item_details?.track_by_lot || false, Number(qty.toFixed(2)));
-      if (out.item_details?.track_by_lot) {
-        lineGroup.patchValue({ lot_tracking_number: `${batchNo}-OUT-${String(idx + 1).padStart(2, '0')}` });
-      }
-      this.produceLines.push(lineGroup);
-    });
+
+    // If outputs have already been recorded, open blank form
+    if (this.hasExistingOutputDocs()) {
+      this.addProduceLine();
+    } else {
+      const recipe = this.summary()?.recipe;
+      const batchNo = this.summary()?.batch.batch_number || 'BATCH';
+      recipe?.expected_outputs?.forEach((out, idx) => {
+        const batchQty = Number(this.summary()?.batch?.quantity_hides || 0);
+        let qty = 0;
+        if (batchQty && out.expected_yield_percentage) {
+          qty = (Number(out.expected_yield_percentage) / 100) * batchQty;
+        }
+        const lineGroup = this.createLine(out.item, out.item_details?.name || '', out.item_details?.track_by_lot || false, Math.floor(qty));
+        if (out.item_details?.track_by_lot) {
+          lineGroup.patchValue({ lot_tracking_number: `${batchNo}-OUT-${String(idx + 1).padStart(2, '0')}` });
+        }
+        this.produceLines.push(lineGroup);
+      });
+    }
     this.isConsumeMode.set(false);
     this.isConsumeInputsMode.set(false);
     this.isProduceMode.set(true);
@@ -499,12 +627,17 @@ export class BatchDetailComponent implements OnInit {
   openConsumeInputs() {
     this.consumeInputLines.clear();
     const recipe = this.summary()?.recipe;
-    const baseWeight = Number(this.summary()?.batch.base_weight || 0);
     const inputs = recipe?.expected_inputs || [];
     
     this.isConsumeMode.set(false);
     this.isProduceMode.set(false);
     this.isConsumeInputsMode.set(true);
+
+    // If inputs have already been recorded, open blank form
+    if (this.hasExistingInputDocs()) {
+      this.addConsumeInputLine();
+      return;
+    }
 
     const itemIds = [...new Set(inputs.map(inp => inp.item))].filter(id => id);
     if (itemIds.length > 0) {
@@ -515,27 +648,28 @@ export class BatchDetailComponent implements OnInit {
           const newMap = { ...this.availableLotsMap() };
           results.forEach(r => newMap[r.id!] = r.lots);
           this.availableLotsMap.set(newMap);
-          this.populateInputLines(inputs, baseWeight);
+          this.populateInputLines(inputs);
           this.isLoading.set(false);
         },
         error: () => {
           this.toastService.error('Error', 'Failed to load available lots for inputs.');
-          this.populateInputLines(inputs, baseWeight);
+          this.populateInputLines(inputs);
           this.isLoading.set(false);
         }
       });
     } else {
-      this.populateInputLines(inputs, baseWeight);
+      this.populateInputLines(inputs);
     }
   }
 
-  private populateInputLines(inputs: any[], baseWeight: number) {
+  private populateInputLines(inputs: any[]) {
+    const batchQty = Number(this.summary()?.batch?.quantity_hides || 0);
     inputs.forEach((inp, idx) => {
       let qty = 0;
-      if (baseWeight && inp.expected_percentage) {
-        qty = (Number(inp.expected_percentage) / 100) * baseWeight;
+      if (batchQty && inp.expected_percentage) {
+        qty = (Number(inp.expected_percentage) / 100) * batchQty;
       }
-      this.consumeInputLines.push(this.createLine(inp.item ? Number(inp.item) : undefined, inp.item_details?.name || '', inp.item_details?.track_by_lot || false, Number(qty.toFixed(2)), false, '', String(idx+1), Number(inp.item_details?.current_stock || 0)));
+      this.consumeInputLines.push(this.createLine(inp.item ? Number(inp.item) : undefined, inp.item_details?.name || '', inp.item_details?.track_by_lot || false, Math.floor(qty), false, '', String(idx+1), Number(inp.item_details?.current_stock || 0)));
     });
   }
 
@@ -624,7 +758,7 @@ export class BatchDetailComponent implements OnInit {
     if (this.consumeForm.invalid) return;
     
     const rawLines = this.consumeLines.getRawValue();
-    const validLines = rawLines.filter(c => !c._is_instruction && c.item && c.quantity > 0);
+    const validLines = rawLines.filter(c => !c._is_instruction && c.item && Number(c.quantity) > 0);
     
     if (validLines.length === 0) {
       this.toastService.error('Error', 'No valid items to consume.');
@@ -786,18 +920,11 @@ export class BatchDetailComponent implements OnInit {
     const sum = this.summary();
     if (!sum) return 0;
     const batchQty = Number(sum.batch.quantity_hides) || 0;
-    const baseWeight = Number(sum.batch.base_weight) || 0;
     
     let totalExpected = 0;
     sum.recipe.expected_inputs.forEach((inp: any) => {
-      const cat = inp.item_details?.category_details?.name;
-      const isPieces = cat === 'FINISHED_LEATHER' || cat === 'RAW_HIDE' || cat === 'SEMI_FINISHED_LEATHER';
       const pct = Number(inp.expected_percentage) || 0;
-      if (isPieces) {
-         totalExpected += Math.floor((pct / 100) * batchQty);
-      } else {
-         totalExpected += Number(((pct / 100) * baseWeight).toFixed(2));
-      }
+      totalExpected += Math.floor((pct / 100) * batchQty);
     });
     return totalExpected > 0 ? totalExpected : batchQty;
   }
@@ -832,18 +959,11 @@ export class BatchDetailComponent implements OnInit {
     const sum = this.summary();
     if (!sum) return 0;
     const batchQty = Number(sum.batch.quantity_hides) || 0;
-    const baseWeight = Number(sum.batch.base_weight) || 0;
     
     let totalExpected = 0;
     sum.recipe.expected_outputs.forEach((out: any) => {
-      const cat = out.item_details?.category_details?.name;
-      const isPieces = cat === 'FINISHED_LEATHER' || cat === 'RAW_HIDE' || cat === 'SEMI_FINISHED_LEATHER';
       const pct = Number(out.expected_yield_percentage) || 0;
-      if (isPieces) {
-         totalExpected += Math.floor((pct / 100) * batchQty);
-      } else {
-         totalExpected += Number(((pct / 100) * baseWeight).toFixed(2));
-      }
+      totalExpected += Math.floor((pct / 100) * batchQty);
     });
 
     return totalExpected;
@@ -871,7 +991,21 @@ export class BatchDetailComponent implements OnInit {
     if (!line || !line.value._track_by_lot || !line.value.lot_tracking_number) return;
     const lot = this.getAvailableLots(line.value.item)?.find(l => l.lot_tracking_number === line.value.lot_tracking_number);
     if (lot) {
-      line.patchValue({ quantity: Math.floor(Number(lot.current_primary_quantity)) });
+      const lotStock = Math.floor(Number(lot.current_primary_quantity));
+      
+      const expected = this.getExpectedInputQty();
+      const historical = this.getHistoricallyEnteredInputs();
+      const otherRowsQty = this.consumeInputLines.controls.reduce((s, c, i) => {
+        return i !== index ? s + (Number(c.value.quantity) || 0) : s;
+      }, 0);
+      
+      const remainingNeeded = expected - historical - otherRowsQty;
+      
+      // Si aún falta por completar la fórmula, usar el mínimo entre lo que falta y lo que hay en el lote.
+      // Si ya se superó la fórmula (remainingNeeded <= 0), por defecto colocar todo el stock del lote para permitir vaciado manual.
+      const suggestedQty = remainingNeeded > 0 ? Math.min(lotStock, remainingNeeded) : lotStock;
+      
+      line.patchValue({ quantity: suggestedQty });
     }
   }
 }

@@ -63,9 +63,9 @@
       <div class="flex flex-wrap justify-between items-center gap-3 mb-6">
         <div class="flex flex-wrap gap-2">
           @if (summary()!.batch.status === 'IN_PROGRESS') {
-            <button (click)="toggleConsumeInputs()" class="px-4 py-2 text-sm font-medium text-white bg-primary/80 rounded-lg hover:bg-primary/90 cursor-pointer transition">📥 {{ isConsumeInputsMode() ? 'Cancel Inputs' : 'Record Inputs' }}</button>
-            <button (click)="toggleConsumeMode()" class="px-4 py-2 text-sm font-medium text-white bg-warning rounded-lg hover:bg-warning/90 cursor-pointer transition">🧪 {{ isConsumeMode() ? 'Cancel Chemicals' : 'Record Chemicals' }}</button>
-            <button (click)="toggleProduce()" class="px-4 py-2 text-sm font-medium text-white bg-success rounded-lg hover:bg-success/90 cursor-pointer transition">✅ {{ isProduceMode() ? 'Cancel Output' : 'Record Output' }}</button>
+            <button (click)="toggleConsumeInputs()" class="px-4 py-2 text-sm font-medium text-white bg-primary/80 rounded-lg hover:bg-primary/90 cursor-pointer transition">📥 {{ isConsumeInputsMode() ? 'Cancelar' : (hasExistingInputDocs() ? '+ Nuevo Entrada' : 'Registrar Entradas') }}</button>
+            <button (click)="toggleConsumeMode()" class="px-4 py-2 text-sm font-medium text-white bg-warning rounded-lg hover:bg-warning/90 cursor-pointer transition">🧪 {{ isConsumeMode() ? 'Cancelar' : (hasExistingChemicalDocs() ? '+ Nuevo Químicos' : 'Registrar Químicos') }}</button>
+            <button (click)="toggleProduce()" class="px-4 py-2 text-sm font-medium text-white bg-success rounded-lg hover:bg-success/90 cursor-pointer transition">✅ {{ isProduceMode() ? 'Cancelar' : (hasExistingOutputDocs() ? '+ Nueva Salida' : 'Registrar Salidas') }}</button>
           }
         </div>
         <div class="flex flex-wrap gap-2 ml-auto">
@@ -106,23 +106,23 @@
             <table class="min-w-full divide-y divide-border">
               <thead class="bg-surface-alt">
                 <tr>
-                  <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Sec</th>
-                  <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Item / Instrucción</th>
-                  <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-text-muted uppercase tracking-wider">Qty Esperada (kg)</th>
-                  <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-text-muted uppercase tracking-wider">Qty Real</th>
-                  <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Lote / Notas</th>
-                  <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-text-muted uppercase tracking-wider">X</th>
+                  <th scope="col" class="px-4 py-2 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Sec</th>
+                  <th scope="col" class="px-4 py-2 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Item / Instrucción</th>
+                  <th scope="col" class="px-4 py-2 text-right text-xs font-medium text-text-muted uppercase tracking-wider">Qty Esperada (kg)</th>
+                  <th scope="col" class="px-4 py-2 text-right text-xs font-medium text-text-muted uppercase tracking-wider">Qty Real</th>
+                  <th scope="col" class="px-4 py-2 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Lote / Notas</th>
+                  <th scope="col" class="px-4 py-2 text-center text-xs font-medium text-text-muted uppercase tracking-wider">X</th>
                 </tr>
               </thead>
               <tbody formArrayName="lines" class="bg-surface divide-y divide-border">
-                @for (line of consumeLines.controls; track $index; let i = $index) {
+                @for (line of consumeLines.controls; track line; let i = $index) {
                   <tr [formGroupName]="i" [ngClass]="{'bg-surface-alt/30 opacity-70': line.value._is_instruction}">
-                    <td class="px-4 py-3 whitespace-nowrap text-sm text-text-muted text-center">{{ line.value._sequence_order }}</td>
-                    <td class="px-4 py-3 text-sm text-text font-medium relative">
+                    <td class="px-4 py-2 whitespace-nowrap text-sm text-text-muted text-center">{{ line.value._sequence_order }}</td>
+                    <td class="px-4 py-2 text-sm text-text font-medium relative">
                       @if (line.value._is_instruction) {
                         <span class="text-info-foreground">{{ line.value._item_name }}</span>
                       } @else if (line.value._sequence_order === 'Extra') {
-                        <input type="text" formControlName="_item_name" (input)="onItemSearch($any($event.target).value, 'consume', i)" (focus)="onItemSearch($any($event.target).value, 'consume', i)" (blur)="clearSearch()" class="w-full px-3 py-1.5 border border-border rounded-md text-sm bg-background focus:ring-primary focus:border-primary" placeholder="Buscar ítem extra..." autocomplete="off">
+                        <input type="text" formControlName="_item_name" (input)="onItemSearch($any($event.target).value, 'consume', i)" (focus)="onItemSearch($any($event.target).value, 'consume', i)" (blur)="clearSearch()" class="w-full px-2 py-1 border border-border rounded-md text-sm bg-background focus:ring-primary focus:border-primary" placeholder="Buscar ítem extra..." autocomplete="off">
                         @if (isSearchActive('consume', i) && filteredItems().length > 0) {
                           <div class="absolute z-50 mt-1 w-full bg-surface border border-border rounded-lg shadow-lg max-h-36 overflow-y-auto">
                             @for (item of filteredItems(); track item.id) {
@@ -136,12 +136,12 @@
                         <span>{{ line.value._item_name }}</span>
                       }
                     </td>
-                    <td class="px-4 py-3 whitespace-nowrap text-sm text-text-muted text-right">
+                    <td class="px-4 py-2 whitespace-nowrap text-sm text-text-muted text-right">
                       @if (!line.value._is_instruction) {
                         {{ line.value._expected_qty | number:'1.2-2' }}
                       }
                     </td>
-                    <td class="px-4 py-3 whitespace-nowrap text-right">
+                    <td class="px-4 py-2 whitespace-nowrap text-right">
                       @if (!line.value._is_instruction) {
                         <div class="flex flex-col items-end">
                           <input type="number" formControlName="quantity" min="0" step="0.01" 
@@ -149,7 +149,7 @@
                               'border-danger text-danger bg-danger/5': line.value.quantity > line.value._expected_qty || line.value.quantity > line.value._current_stock,
                               'border-warning text-warning-foreground bg-warning/10': line.value.quantity < line.value._expected_qty && line.value.quantity <= line.value._current_stock
                             }"
-                            class="w-24 px-2 py-1.5 border border-border rounded-md text-sm text-right focus:ring-primary focus:border-primary transition-colors">
+                            class="w-24 px-2 py-1 border border-border rounded-md text-sm text-right focus:ring-primary focus:border-primary transition-colors">
                           @if (line.value.quantity > line.value._current_stock) {
                             <span class="text-[10px] text-danger mt-0.5 whitespace-nowrap font-medium">Excede stock actual ({{ line.value._current_stock }})</span>
                           } @else if (line.value.quantity === 0 && line.value.item) {
@@ -158,10 +158,15 @@
                         </div>
                       }
                     </td>
-                    <td class="px-4 py-3 whitespace-nowrap">
+                    <td class="px-4 py-2 whitespace-nowrap">
                       @if (!line.value._is_instruction) {
                         @if (line.value._track_by_lot) {
-                          <input type="text" formControlName="lot_tracking_number" class="w-full px-2 py-1.5 border border-border rounded-md text-sm focus:ring-primary focus:border-primary" placeholder="Lote #">
+                          <select formControlName="lot_tracking_number" class="w-full px-2 py-1 border border-border rounded-md text-sm focus:ring-primary focus:border-primary" [ngClass]="{'border-danger': !line.value.lot_tracking_number && +line.value.quantity > 0}">
+                            <option value="">Seleccionar lote...</option>
+                            @for (lot of getAvailableLots(line.value.item); track lot.id) {
+                              <option [value]="lot.lot_tracking_number">{{ lot.lot_tracking_number }} ({{ lot.current_primary_quantity }})</option>
+                            }
+                          </select>
                         } @else {
                           <span class="text-xs text-text-muted italic">N/A</span>
                         }
@@ -169,7 +174,7 @@
                         <span class="text-xs text-text-muted italic">{{ line.value._duration }} min</span>
                       }
                     </td>
-                    <td class="px-4 py-3 whitespace-nowrap text-center">
+                    <td class="px-4 py-2 whitespace-nowrap text-center">
                       @if (!line.value._is_instruction && line.value._sequence_order === 'Extra') {
                         <button type="button" (click)="removeConsumeLine(i)" class="text-text-muted hover:text-danger cursor-pointer p-1"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
                       }
@@ -212,13 +217,13 @@
               <thead class="bg-surface-alt">
                 <tr>
                   <th class="px-4 py-3 text-left text-xs font-medium text-text-muted">Item</th>
-                  <th class="px-4 py-3 text-right text-xs font-medium text-text-muted">Cantidad</th>
                   <th class="px-4 py-3 text-left text-xs font-medium text-text-muted">Lote de Origen</th>
+                  <th class="px-4 py-3 text-right text-xs font-medium text-text-muted">Cantidad</th>
                   <th class="px-4 py-3 text-center text-xs font-medium text-text-muted">ACC</th>
                 </tr>
               </thead>
               <tbody formArrayName="lines" class="bg-surface divide-y divide-border">
-                @for (line of consumeInputLines.controls; track $index; let i = $index) {
+                @for (line of consumeInputLines.controls; track line; let i = $index) {
                   <tr [formGroupName]="i">
                     <td class="px-4 py-2 relative">
                       <input type="text" formControlName="_item_name" (input)="onItemSearch($any($event.target).value, 'consumeInputs', i)" (focus)="onItemSearch($any($event.target).value, 'consumeInputs', i)" (blur)="clearSearch()" class="w-full px-2 py-1 border border-border rounded-md text-sm focus:ring-emerald-500 focus:border-emerald-500" placeholder="Buscar materia prima..." autocomplete="off">
@@ -230,6 +235,16 @@
                             </button>
                           }
                         </div>
+                      }
+                    </td>
+                    <td class="px-4 py-2">
+                       @if (line.value._track_by_lot) {
+                        <select formControlName="lot_tracking_number" class="w-full px-2 py-1 border border-border rounded-md text-sm focus:ring-emerald-500 focus:border-emerald-500" [ngClass]="{'border-danger': !line.value.lot_tracking_number}">
+                          <option value="" disabled selected>Seleccionar lote...</option>
+                          @for (lot of getAvailableLots(line.value.item); track lot.id) {
+                            <option [value]="lot.lot_tracking_number">{{ lot.lot_tracking_number }} (Disp: {{ lot.current_primary_quantity }})</option>
+                          }
+                        </select>
                       }
                     </td>
                     <td class="px-4 py-2 text-right">
@@ -244,16 +259,6 @@
                           <span class="text-[10px] text-danger whitespace-nowrap font-medium pr-10">Excede stock disp.</span>
                         }
                       </div>
-                    </td>
-                    <td class="px-4 py-2">
-                       @if (line.value._track_by_lot) {
-                        <select formControlName="lot_tracking_number" class="w-full px-2 py-1 border border-border rounded-md text-sm focus:ring-emerald-500 focus:border-emerald-500" [ngClass]="{'border-danger': !line.value.lot_tracking_number}">
-                          <option value="" disabled selected>Seleccionar lote de inventario...</option>
-                          @for (lot of getAvailableLots(line.value.item); track lot.id) {
-                            <option [value]="lot.lot_tracking_number">{{ lot.lot_tracking_number }} (Disp: {{ lot.current_primary_quantity }})</option>
-                          }
-                        </select>
-                      }
                     </td>
                     <td class="px-4 py-2 text-center">
                       <button type="button" (click)="removeConsumeInputLine(i)" class="text-text-muted hover:text-danger p-1 rounded"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
@@ -299,13 +304,13 @@
               <thead class="bg-surface-alt">
                 <tr>
                   <th class="px-4 py-3 text-left text-xs font-medium text-text-muted">Producto de Salida</th>
-                  <th class="px-4 py-3 text-right text-xs font-medium text-text-muted">Cantidad Resultante</th>
                   <th class="px-4 py-3 text-left text-xs font-medium text-text-muted">Lote a Generar</th>
+                  <th class="px-4 py-3 text-right text-xs font-medium text-text-muted">Cantidad Resultante</th>
                   <th class="px-4 py-3 text-center text-xs font-medium text-text-muted">ACC</th>
                 </tr>
               </thead>
               <tbody formArrayName="lines" class="bg-surface divide-y divide-border">
-                @for (line of produceLines.controls; track $index; let i = $index) {
+                @for (line of produceLines.controls; track line; let i = $index) {
                   <tr [formGroupName]="i">
                     <td class="px-4 py-2 relative">
                       <input type="text" formControlName="_item_name" (input)="onItemSearch($any($event.target).value, 'produce', i)" (focus)="onItemSearch($any($event.target).value, 'produce', i)" (blur)="clearSearch()" class="w-full px-2 py-1 border border-border rounded-md text-sm focus:ring-purple-500 focus:border-purple-500" placeholder="Buscar producto..." autocomplete="off">
@@ -319,13 +324,13 @@
                         </div>
                       }
                     </td>
-                    <td class="px-4 py-2 text-right">
-                      <input type="number" formControlName="quantity" min="0" step="1" class="w-24 px-2 py-1 border border-border rounded-md text-sm text-right focus:ring-purple-500 focus:border-purple-500">
-                    </td>
                     <td class="px-4 py-2">
                        @if (line.value._track_by_lot) {
                         <input type="text" formControlName="lot_tracking_number" class="w-full px-2 py-1 border border-border rounded-md text-sm focus:ring-purple-500 focus:border-purple-500" [ngClass]="{'border-danger text-danger': !line.value.lot_tracking_number}">
                       }
+                    </td>
+                    <td class="px-4 py-2 text-right">
+                      <input type="number" formControlName="quantity" min="0" step="1" class="w-24 px-2 py-1 border border-border rounded-md text-sm text-right focus:ring-purple-500 focus:border-purple-500">
                     </td>
                     <td class="px-4 py-2 text-center">
                       <button type="button" (click)="removeProduceLine(i)" class="text-text-muted hover:text-danger p-1 rounded"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
@@ -358,36 +363,101 @@
     <!-- Recipe Preview -->
     <div class="bg-surface border border-border rounded-lg p-5 mb-6">
       <h2 class="text-sm font-semibold text-text mb-3">📋 Recipe: {{ summary()!.recipe.name }}</h2>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-[1fr_2fr_1fr] gap-4">
         <div>
           <h4 class="text-xs font-semibold text-warning mb-1.5">Inputs</h4>
           @for (inp of summary()!.recipe.expected_inputs; track inp.id) {
-            <div class="text-xs text-text-muted mb-1">{{ inp.item_details?.name }} <span class="text-text">{{ inp.expected_percentage }}%</span></div>
+            <div class="text-xs text-text-muted mb-0.5">{{ inp.item_details?.name }} <span class="text-text">{{ inp.expected_percentage }}%</span></div>
           } @empty { <p class="text-xs text-text-muted italic">None</p> }
         </div>
         <div>
           <h4 class="text-xs font-semibold text-info-foreground mb-1.5">Chemicals & Instructions</h4>
-          @for (chem of summary()!.recipe.chemicals; track chem.id) {
-            <div class="text-xs text-text-muted mb-1">
-              {{ chem.sequence_order }}. 
-              @if (chem.instruction) {
-                <span class="text-info-foreground font-medium">{{ chem.instruction }}</span>
-                @if (chem.quantity_percentage) { <span class="text-text">{{ chem.quantity_percentage }}%</span> }
-              } @else {
-                {{ chem.item_details?.name }} <span class="text-text">{{ chem.quantity_percentage }}%</span>
-              }
-               · {{ chem.duration_minutes }}min
-            </div>
-          } @empty { <p class="text-xs text-text-muted italic">None</p> }
+          <div class="columns-2 gap-x-4">
+            @for (chem of summary()!.recipe.chemicals; track chem.id) {
+              <div class="text-[11px] text-text-muted mb-0.5 break-inside-avoid">
+                <span class="text-text-muted/60">{{ chem.sequence_order }}.</span>
+                @if (chem.instruction) {
+                  <span class="text-info-foreground font-medium">{{ chem.instruction }}</span>
+                  @if (chem.quantity_percentage) { <span class="text-text">{{ chem.quantity_percentage }}%</span> }
+                } @else {
+                  {{ chem.item_details?.name }} <span class="text-text">{{ chem.quantity_percentage }}%</span>
+                }
+                @if (chem.duration_minutes) {
+                  <span class="text-text-muted/50">·{{ chem.duration_minutes }}m</span>
+                }
+              </div>
+            } @empty { <p class="text-xs text-text-muted italic">None</p> }
+          </div>
         </div>
         <div>
           <h4 class="text-xs font-semibold text-success mb-1.5">Outputs</h4>
           @for (out of summary()!.recipe.expected_outputs; track out.id) {
-            <div class="text-xs text-text-muted mb-1">{{ out.item_details?.name }} <span class="text-text">{{ out.expected_yield_percentage }}% yield</span></div>
+            <div class="text-xs text-text-muted mb-0.5">{{ out.item_details?.name }} <span class="text-text">{{ out.expected_yield_percentage }}%</span></div>
           } @empty { <p class="text-xs text-text-muted italic">None</p> }
         </div>
       </div>
     </div>
+
+    <!-- Expected vs Actual Summary -->
+    @if (hasExistingInputDocs() || hasExistingChemicalDocs() || hasExistingOutputDocs()) {
+      <div class="bg-surface border border-border rounded-lg p-5 mb-6">
+        <h2 class="text-sm font-semibold text-text mb-3">📊 Receta vs Realidad</h2>
+        <div class="grid grid-cols-1 md:grid-cols-[1fr_2fr_1fr] gap-4">
+          <!-- Inputs -->
+          <div>
+            <h4 class="text-xs font-semibold text-primary mb-1.5 pb-1 border-b border-border">📥 Entradas</h4>
+            @for (row of recipeSummary().inputs; track row.name) {
+              <div class="flex justify-between items-center text-[11px] py-0.5">
+                <span class="text-text-muted truncate mr-1">{{ row.name }}</span>
+                <div class="flex items-center gap-1 shrink-0">
+                  <span class="text-text-muted">{{ row.expected }}/</span>
+                  <span class="font-semibold" [ngClass]="{'text-success': row.diff === 0, 'text-warning': row.diff !== 0 && row.actual > 0, 'text-danger': row.actual === 0 && row.expected > 0}">{{ row.actual }}</span>
+                  @if (row.diff !== 0) {
+                    <span class="text-[9px] font-bold px-0.5 rounded" [ngClass]="{'bg-success/10 text-success': row.diff > 0, 'bg-danger/10 text-danger': row.diff < 0}">{{ row.diff > 0 ? '+' : '' }}{{ row.diff }}</span>
+                  } @else { <span class="text-[9px] text-success">✓</span> }
+                </div>
+              </div>
+            } @empty { <p class="text-[11px] text-text-muted italic">-</p> }
+          </div>
+
+          <!-- Chemicals -->
+          <div>
+            <h4 class="text-xs font-semibold text-warning mb-1.5 pb-1 border-b border-border">🧪 Químicos (kg)</h4>
+            <div class="columns-2 gap-x-3">
+              @for (row of recipeSummary().chemicals; track row.name) {
+                <div class="flex justify-between items-center text-[11px] py-0.5 break-inside-avoid">
+                  <span class="text-text-muted truncate mr-1">{{ row.name }}</span>
+                  <div class="flex items-center gap-1 shrink-0">
+                    <span class="text-text-muted">{{ row.expected | number:'1.0-1' }}/</span>
+                    <span class="font-semibold" [ngClass]="{'text-success': row.diff === 0, 'text-warning': row.diff !== 0 && row.actual > 0, 'text-danger': row.actual === 0 && row.expected > 0}">{{ row.actual | number:'1.0-1' }}</span>
+                    @if (row.diff !== 0) {
+                      <span class="text-[9px] font-bold px-0.5 rounded" [ngClass]="{'bg-success/10 text-success': row.diff > 0, 'bg-danger/10 text-danger': row.diff < 0}">{{ row.diff > 0 ? '+' : '' }}{{ row.diff | number:'1.0-1' }}</span>
+                    } @else { <span class="text-[9px] text-success">✓</span> }
+                  </div>
+                </div>
+              } @empty { <p class="text-[11px] text-text-muted italic">-</p> }
+            </div>
+          </div>
+
+          <!-- Outputs -->
+          <div>
+            <h4 class="text-xs font-semibold text-success mb-1.5 pb-1 border-b border-border">✅ Salidas</h4>
+            @for (row of recipeSummary().outputs; track row.name) {
+              <div class="flex justify-between items-center text-[11px] py-0.5">
+                <span class="text-text-muted truncate mr-1">{{ row.name }}</span>
+                <div class="flex items-center gap-1 shrink-0">
+                  <span class="text-text-muted">{{ row.expected }}/</span>
+                  <span class="font-semibold" [ngClass]="{'text-success': row.diff === 0, 'text-warning': row.diff !== 0 && row.actual > 0, 'text-danger': row.actual === 0 && row.expected > 0}">{{ row.actual }}</span>
+                  @if (row.diff !== 0) {
+                    <span class="text-[9px] font-bold px-0.5 rounded" [ngClass]="{'bg-success/10 text-success': row.diff > 0, 'bg-danger/10 text-danger': row.diff < 0}">{{ row.diff > 0 ? '+' : '' }}{{ row.diff }}</span>
+                  } @else { <span class="text-[9px] text-success">✓</span> }
+                </div>
+              </div>
+            } @empty { <p class="text-[11px] text-text-muted italic">-</p> }
+          </div>
+        </div>
+      </div>
+    }
 
     <!-- Document Timeline -->
     <div class="bg-surface border border-border rounded-lg p-5">
